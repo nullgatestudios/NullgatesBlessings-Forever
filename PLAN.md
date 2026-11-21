@@ -1,6 +1,8 @@
 # Nullgate's Blessings - Forever: Plan
 
-Status: planning, with no code written yet. Planned on 2026-11-20.
+Status: phases 0 to 4 built as 1.0.0-beta.1 on 2026-11-20; the in-game checks wait for testers (`/nbless check`). Planned on 2026-11-20.
+
+Built notes: wish lists are fixed in 1.0 (not settings) so every copy of the addon computes the same plan; tank marks (including "not a tank") are shared with the other paladins; Top Up covers missing blessings first, so there's no separate Bless Next button; in raids, Greater Blessings are planned per class and tanks are not excluded from Mass Salvation.
 
 - **Folder:** `NullgatesBlessings-Forever`
 - **Saved variables:** `NullgatesBlessingsDB` (per character)
@@ -36,7 +38,7 @@ Every copy of the addon computes the whole group's plan from the same inputs and
 
 **Inputs**
 
-1. **Wish lists** per class and role (editable). Defaults:
+1. **Wish lists** per class and role (fixed so every copy agrees):
    - Rogue, Warrior: Might, Kings, Salvation, Light
    - Mage, Priest, Warlock: Wisdom, Kings, Salvation
    - Hunter: Kings, Wisdom, Salvation (Might doesn't raise ranged attack power)

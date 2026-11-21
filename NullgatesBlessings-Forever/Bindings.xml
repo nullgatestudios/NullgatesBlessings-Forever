@@ -1,0 +1,5 @@
+<Bindings>
+    <!-- Secure click bindings -->
+    <Binding name="CLICK NullgatesBlessingsTopUp:LeftButton" header="NULLGATESBLESSINGS"/>
+    <Binding name="CLICK NullgatesBlessingsAura:LeftButton"/>
+</Bindings>

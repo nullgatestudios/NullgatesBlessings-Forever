@@ -1,6 +1,6 @@
 # Nullgate's Blessings - Forever
 
-> **Status: planning.** No code yet. See [PLAN.md](PLAN.md).
+> **Status: beta** (1.0.0-beta.1). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
 
 **Nullgate's Blessings** is a paladin addon for **World of Warcraft: Forever** that works out who should give which blessing to whom. It checks the blessings every player already has, skips any another paladin has already given, and moves to that player's next choice. Paladins running the addon reach the same plan automatically, with no chat needed.
 
@@ -36,7 +36,9 @@ Blessings and Greater Blessings both last one hour in Forever. Every duration co
 
 | Command | Action |
 | :--- | :--- |
-| `/nbless` or `/blessings` | Open the assignments and settings. |
+| `/nbless` or `/blessings` | Show or hide the blessing plan. |
+| `/nbless tank <name>` | Mark a player as a tank, not a tank, or back to automatic (or target them and leave out the name). |
+| `/nbless config` | Open the settings. |
 | `/nbless announce` | Post the current assignments to group chat. |
 | `/nbless lock` / `/nbless unlock` | Lock or unlock the bar. |
 | `/nbless reset` | Reset the bar's position. |
@@ -58,6 +60,18 @@ Not released yet. Once it is:
 
 - **Nullgate's Addon Config**: one settings hub and profile manager for the whole suite.
 - **Nullgate's Raid Buffs**, **Cooldowns**, **Restock**, **Quest Tracker** and more.
+
+---
+
+## Development
+
+| Task | Command |
+| :--- | :--- |
+| Refresh the blessing data after a client patch | `python tools/generate_blessing_data.py` (reads the latest Forever build from wago.tools) |
+| Run the tests | `lua tests/run.lua`, `lua tests/smoke.lua` and `lua tests/locales.lua` |
+| Build `zips/NullgatesBlessings-Forever-<version>.zip` | `.\package.ps1` (or `.\package.ps1 -Version 1.0.0` to set the version first) |
+
+Publishing a GitHub release uploads that version to CurseForge (`.github/workflows/curseforge.yml`); pushes only run the tests.
 
 ---
 

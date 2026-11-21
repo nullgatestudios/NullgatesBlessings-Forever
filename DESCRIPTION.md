@@ -45,7 +45,9 @@ The game doesn't allow buttons to change during combat. If the plan changes mid-
 
 | Command | Action |
 | :--- | :--- |
-| `/nbless` or `/blessings` | Open the assignments and settings. |
+| `/nbless` or `/blessings` | Show or hide the blessing plan. |
+| `/nbless tank <name>` | Mark a player as a tank, not a tank, or back to automatic (or target them and leave out the name). |
+| `/nbless config` | Open the settings. |
 | `/nbless announce` | Post the current assignments to group chat. |
 | `/nbless lock` / `/nbless unlock` | Lock or unlock the bar. |
 | `/nbless reset` | Reset the bar's position. |

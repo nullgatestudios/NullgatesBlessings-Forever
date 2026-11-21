@@ -1,0 +1,142 @@
+-- Nullgate's Blessings: tests for the blessing data and the assignment engine, including the case it
+-- was designed for (a Protection and a Holy paladin in a dungeon).
+-- Run from the repository root:  lua tests/run.lua   (Lua 5.1 or newer)
+
+local source = debug.getinfo(1, "S").source or ""
+local script = source:match("^@(.*)$") or "tests/run.lua"
+local scriptDir = script:match("^(.*)[/\\][^/\\]*$") or "."
+local root = (scriptDir:match("^(.*)[/\\][^/\\]*$") or ".") .. "/NullgatesBlessings-Forever/"
+
+local ns = {}
+local function Load(file) assert(loadfile(root .. file), "cannot load " .. file)("NullgatesBlessings-Forever", ns) end
+Load("Data/Blessings.lua")
+Load("Engine.lua")
+local E = ns.Engine
+
+local checks, failures = 0, 0
+local function EQ(got, want, name)
+    checks = checks + 1
+    if got ~= want then
+        failures = failures + 1
+        print(string.format("FAIL %s: expected %s, got %s", name, tostring(want), tostring(got)))
+    end
+end
+
+local function Set(...) local s = {}; for _, v in ipairs({ ... }) do s[v] = true end; return s end
+local ALL = Set("might", "wisdom", "kings", "light", "salvation")
+local NO_KINGS = Set("might", "wisdom", "light", "salvation")
+
+-- --- The data: Forever ---------------------------------------------------------------
+EQ(type(ns.BLESSING_DATA_BUILD), "string", "the data names its client build")
+for _, b in ipairs(ns.BLESSINGS) do
+    EQ(b.single[1][3], 3600, b.key .. ": one hour in Forever")
+    EQ(#b.greater > 0 and b.greater[1][3] == 3600, true, b.key .. ": Greater also one hour")
+    EQ(b.reagent, 21177, b.key .. ": Greater uses Symbol of Kings")
+end
+EQ(#ns.BLESSINGS, 5, "five blessings (no Sanctuary in Forever)")
+EQ(#ns.AURAS >= 3, true, "auras")
+
+-- --- The dungeon example ----------------------------------------------------------------
+local prot = { name = "Ironwall", known = ALL, lean = E.DefaultLean(2) }
+local holy = { name = "Brightmend", known = ALL, lean = E.DefaultLean(1) }
+local players = {
+    { name = "Shiv", class = "ROGUE", role = "DAMAGER" },
+    { name = "Frosty", class = "MAGE", role = "DAMAGER" },
+    { name = "Arrow", class = "HUNTER", role = "DAMAGER" },
+    { name = "Ironwall", class = "PALADIN", role = "TANK", tank = true },
+    { name = "Brightmend", class = "PALADIN", role = "HEALER" },
+}
+local plan = E.Assign({ prot, holy }, players, {})
+local function Pair(p) return plan.Ironwall[p] .. "/" .. plan.Brightmend[p] end
+EQ(Pair("Shiv"), "might/kings", "rogue: Might from Protection, Kings from Holy")
+EQ(Pair("Frosty"), "kings/wisdom", "mage: Kings from Protection, Wisdom from Holy")
+EQ(Pair("Arrow"), "kings/wisdom", "hunter: Kings from Protection, Wisdom from Holy")
+EQ(Pair("Ironwall"), "kings/wisdom", "the Protection tank: Kings and Wisdom")
+EQ(Pair("Brightmend"), "kings/wisdom", "the Holy paladin: Kings and Wisdom")
+
+-- The same plan whatever order the paladins are given in (every copy agrees).
+local again = E.Assign({ holy, prot }, players, {})
+for _, p in ipairs(players) do
+    EQ(again.Ironwall[p.name] .. "/" .. again.Brightmend[p.name], Pair(p.name), "same plan in any order: " .. p.name)
+end
+
+-- --- The other paladin doesn't run the addon ---------------------------------------------
+plan = E.Assign({ prot }, { { name = "Shiv", class = "ROGUE", taken = Set("kings") } }, {})
+EQ(plan.Ironwall.Shiv, "might", "Kings already on the rogue from someone else: Might")
+plan = E.Assign({ prot }, { { name = "Shiv", class = "ROGUE", taken = Set("might") } }, {})
+EQ(plan.Ironwall.Shiv, "kings", "Might already there: the next wish, Kings")
+plan = E.Assign({ prot }, { { name = "Frosty", class = "MAGE", taken = Set("wisdom", "kings") } }, {})
+EQ(plan.Ironwall.Frosty, "salvation", "Wisdom and Kings taken on a mage: Salvation")
+
+-- --- Only one paladin knows Kings ------------------------------------------------------------
+local holyNoKings = { name = "Brightmend", known = NO_KINGS, lean = E.DefaultLean(1) }
+plan = E.Assign({ prot, holyNoKings }, { { name = "Shiv", class = "ROGUE" }, { name = "Frosty", class = "MAGE" } }, {})
+EQ(plan.Ironwall.Shiv .. "/" .. plan.Brightmend.Shiv, "kings/might", "rogue: Kings must come from Protection, so Holy gives Might")
+EQ(plan.Ironwall.Frosty .. "/" .. plan.Brightmend.Frosty, "kings/wisdom", "mage: Kings from Protection, Wisdom from Holy")
+
+-- --- Tanks never get Salvation --------------------------------------------------------------
+local three = { prot, holy, { name = "Zeal", known = ALL, lean = E.DefaultLean(3) } }
+plan = E.Assign(three, { { name = "Tanky", class = "WARRIOR", tank = true } }, {})
+local given = {}
+for _, p in ipairs(three) do if plan[p.name].Tanky then given[plan[p.name].Tanky] = true end end
+EQ(given.salvation, nil, "a tank never gets Salvation")
+EQ(given.kings and given.might and given.light, true, "a warrior tank gets Kings, Might and Light")
+plan = E.Assign(three, { { name = "Dps", class = "WARRIOR" } }, {})
+given = {}
+for _, p in ipairs(three) do if plan[p.name].Dps then given[plan[p.name].Dps] = true end end
+EQ(given.salvation, true, "a non-tank warrior does get Salvation from the third paladin")
+
+-- --- No duplicates, never an unknown blessing ---------------------------------------------------
+local four = { prot, holy, { name = "Zeal", known = ALL, lean = E.DefaultLean(3) }, { name = "Aaron", known = Set("might"), lean = { "might" } } }
+plan = E.Assign(four, { { name = "Shiv", class = "ROGUE" } }, {})
+local seen, dup = {}, false
+for _, p in ipairs(four) do
+    local key = plan[p.name].Shiv
+    if key then
+        if seen[key] then dup = true end
+        seen[key] = true
+        EQ(p.known[key], true, p.name .. " only gives blessings they know")
+    end
+end
+EQ(dup, false, "no two paladins give the same blessing to one player")
+
+-- --- Locks --------------------------------------------------------------------------------------
+plan = E.Assign({ prot, holy }, { { name = "Shiv", class = "ROGUE" } }, { Brightmend = { Shiv = "salvation" } })
+EQ(plan.Brightmend.Shiv, "salvation", "a lock wins")
+EQ(plan.Ironwall.Shiv, "might", "and the other paladin plans around it")
+plan = E.Assign({ prot, holyNoKings }, { { name = "Shiv", class = "ROGUE" } }, { Brightmend = { Shiv = "kings" } })
+EQ(plan.Brightmend.Shiv ~= "kings", true, "a lock on a blessing that paladin doesn't know is ignored")
+
+-- --- Auras --------------------------------------------------------------------------------------
+local auras = E.AssignAuras({
+    { name = "Ironwall", knownAuras = Set("devotion", "retribution"), auraLean = { "devotion", "retribution" } },
+    { name = "Brightmend", knownAuras = Set("devotion", "concentration"), auraLean = { "devotion", "concentration" } },
+})
+EQ(auras.Brightmend, "devotion", "auras: first by name gets their first choice")
+EQ(auras.Ironwall, "retribution", "the next takes their next choice")
+
+-- --- Ranks ---------------------------------------------------------------------------------------
+local might = ns.BLESSINGS[1]
+local known = {}
+for _, r in ipairs(might.single) do known[r[1]] = true end
+local function IsKnown(id) return known[id] == true end
+EQ(E.Rank(might.single, 60, IsKnown)[2], 60, "a level 60 gets the top rank")
+EQ(E.Rank(might.single, 25, IsKnown)[2], 32, "a level 25 gets the rank learned at 32 (up to 10 above)")
+
+-- --- Sync messages -------------------------------------------------------------------------------
+local msg = E.EncodeHello({ known = Set("might", "kings"), lean = { "might", "kings" }, knownAuras = Set("devotion"),
+    auraLean = { "devotion" }, tanks = Set("Ironwall"), locks = { Shiv = "kings" } })
+EQ(msg, "H;k=kings,might;l=might,kings;ka=devotion;al=devotion;tm=Ironwall;nt=;lk=Shiv:kings", "the hello message")
+local info = E.DecodeHello(msg)
+EQ(info.known.kings and info.known.might and info.lean[1] == "might" and info.tanks.Ironwall and info.locks.Shiv == "kings", true,
+    "decodes back")
+EQ(E.DecodeHello("garbage"), nil, "anything else is ignored")
+EQ(next(E.DecodeHello("H;k=;l=;ka=;al=;tm=;nt=;lk=").known), nil, "an empty hello decodes to empty sets")
+local ls = E.EncodeLeaderLocks({ Ironwall = { Shiv = "kings" }, Brightmend = { Frosty = "light" } })
+EQ(ls, "LS;Brightmend:Frosty:light,Ironwall:Shiv:kings", "the leader lock message")
+local back = E.DecodeLeaderLocks(ls)
+EQ(back.Ironwall.Shiv == "kings" and back.Brightmend.Frosty == "light", true, "decodes back")
+EQ(E.DecodeLeaderLocks("H;k="), nil, "a hello isn't a leader lock message")
+
+print(string.format("%d checks, %d failure(s)", checks, failures))
+if failures > 0 then os.exit(1) end
