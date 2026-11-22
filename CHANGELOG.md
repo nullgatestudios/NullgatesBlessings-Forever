@@ -2,6 +2,16 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.8] - 2026-11-21
+
+### New
+
+- **Smart macro.** Type `/nbless macro` (or use the button in the settings) to make a character macro called NGBless and put it on your cursor; drop it on an action bar. It casts the right blessing on your friendly target: your planned one when they're in your plan (the Greater Blessing for their class in a raid), or for anyone else the best one from their class list that they don't already have. With no friendly target, it tops up whoever in your group needs it next. It shows the blessing's icon, range and cooldown like any spell.
+
+### Good to know
+
+- The game doesn't let addons change macros during combat, so in combat the macro keeps the blessing it had and catches up when combat ends.
+
 ## [1.0.0-beta.7] - 2026-11-21
 
 ### Changed

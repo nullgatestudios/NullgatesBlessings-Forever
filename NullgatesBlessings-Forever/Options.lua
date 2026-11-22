@@ -216,6 +216,16 @@ function Options.Build(container)
     Button(container, L["Show the plan"], 176, y, 150, function() ns.PlanWindow.Show() end)
     y = y - 34
 
+    y = Header(container, L["Smart macro"], y)
+    local macroNote = container:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    macroNote:SetPoint("TOPLEFT", container, "TOPLEFT", 16, y)
+    macroNote:SetWidth(330)
+    macroNote:SetJustifyH("LEFT")
+    macroNote:SetText(L["One action-bar button: it casts the right blessing on your friendly target, or tops up your group when you have no friendly target. It updates out of combat."])
+    y = y - 44
+    Button(container, L["Make the smart macro"], 16, y, 200, function() ns.Macro.Make() end)
+    y = y - 34
+
     y = Header(container, L["Your leanings"], y)
     local function LeanList()
         local src, list = db.lean or ns.Engine.DefaultLean(ns.Group.MyTree()), {}

@@ -103,6 +103,7 @@ function ns.Refresh()
     C_Timer.After(0.5, function()
         queued = false
         ns.Buttons.Update()
+        ns.Macro.Update()
         ns.PlanWindow.Draw()
         CheckSymbols()
     end)
@@ -147,7 +148,9 @@ events:SetScript("OnEvent", function(_, event, ...)
     elseif not active then
         return
     elseif event == "UNIT_AURA" then
-        if arg1 == "player" or (arg1 and (arg1:match("^party%d") or arg1:match("^raid%d"))) then ns.Refresh() end
+        if arg1 == "player" or arg1 == "target" or (arg1 and (arg1:match("^party%d") or arg1:match("^raid%d"))) then ns.Refresh() end
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        ns.Macro.Update()
     elseif event == "INSPECT_READY" then
         ns.Inspect.OnReady(arg1)
     elseif event == "UPDATE_SHAPESHIFT_FORM" or event == "UPDATE_SHAPESHIFT_FORMS" then
@@ -158,7 +161,7 @@ events:SetScript("OnEvent", function(_, event, ...)
     end
 end)
 for _, event in ipairs({ "ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_ENABLED", "CHAT_MSG_ADDON", "GROUP_ROSTER_UPDATE",
-    "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS", "INSPECT_READY" }) do
+    "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS", "INSPECT_READY", "PLAYER_TARGET_CHANGED" }) do
     events:RegisterEvent(event)
 end
 
@@ -170,6 +173,7 @@ local function Help()
     print("  /nbless config - " .. L["open the settings"])
     print("  /nbless lock | unlock - " .. L["lock or unlock the bar"])
     print("  /nbless reset - " .. L["reset the bar's position"])
+    print("  /nbless macro - " .. L["make the smart blessing macro and put it on your cursor"])
     print("  /nbless check - " .. L["test what the addon needs in this client (results are saved)"])
 end
 
@@ -208,6 +212,8 @@ SlashCmdList["NULLGATESBLESSINGS"] = function(msg)
         ns.Buttons.Update()
     elseif command == "reset" then
         ns.Buttons.ResetPosition()
+    elseif command == "macro" then
+        ns.Macro.Make()
     else
         Help()
     end

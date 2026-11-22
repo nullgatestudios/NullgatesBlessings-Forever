@@ -197,6 +197,39 @@ table.insert(auras.party3, { "Blessing of Kings", now + 3600, "raid9" }) -- stil
 Fire("UNIT_AURA", "party4")
 Flush()
 OK(topUp.attributes.unit == "party4", "Top Up picks the one with 5 minutes left")
+-- --- The smart macro ------------------------------------------------------------------------------
+local macros, onCursor = {}, nil
+function GetMacroIndexByName(name) for i, m in ipairs(macros) do if m.name == name then return i end end return 0 end
+function CreateMacro(name, icon, body) macros[#macros + 1] = { name = name, icon = icon, body = body }; return #macros end
+function EditMacro(i, name, icon, body) macros[i] = { name = name, icon = icon, body = body } end
+function PickupMacro(i) onCursor = i end
+function UnitIsPlayer(u) return U(u) ~= nil end
+function UnitCanAssist(_, u) return U(u) ~= nil end
+SlashCmdList.NULLGATESBLESSINGS("macro")
+OK(macros[1] and macros[1].name == "NGBless" and onCursor == 1, "/nbless macro makes the macro and puts it on the cursor")
+local mightName = names[mightTop]
+OK(macros[1].body:find("^#showtooltip\n/cast ") and macros[1].body:find("[@party4] ", 1, true), "no target: the macro tops up the one with 5 minutes left")
+units.target = units.party2
+Fire("PLAYER_TARGET_CHANGED")
+Flush()
+OK(macros[1].body:find("[@target,help,nodead] " .. mightName, 1, true), "targeting the rogue: our planned Might for the rogue")
+units.target = { name = "Stranger", class = "MAGE", level = 60 }
+auras.target = { { "Blessing of Wisdom", now + 3600, "raid9" } }
+Fire("PLAYER_TARGET_CHANGED")
+Flush()
+local kingsName = names[data.BLESSINGS[3].single[#data.BLESSINGS[3].single][1]]
+OK(macros[1].body:find("[@target,help,nodead] " .. kingsName, 1, true), "a mage outside the group with Wisdom already: Kings, the next on the mage list")
+inCombat = true
+units.target = units.party2
+Fire("PLAYER_TARGET_CHANGED")
+Flush()
+OK(macros[1].body:find(kingsName, 1, true), "in combat the macro keeps what it had")
+inCombat = false
+Fire("PLAYER_REGEN_ENABLED")
+Flush()
+OK(macros[1].body:find("[@target,help,nodead] " .. mightName, 1, true), "and catches up when combat ends")
+units.target, auras.target = nil, nil
+
 db.locked = true
 auras.party4[1][2] = now + 3000
 local onAura = ns.Plan.Aura(ns.Buttons.State().auras.Ironwall) -- your aura is on too

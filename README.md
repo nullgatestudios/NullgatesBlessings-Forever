@@ -1,6 +1,6 @@
 # Nullgate's Blessings - Forever
 
-> **Status: beta** (1.0.0-beta.7). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
+> **Status: beta** (1.0.0-beta.8). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
 
 **Nullgate's Blessings** is a paladin addon for **World of Warcraft: Forever** that works out who should give which blessing to whom. It checks the blessings every player already has, skips any another paladin has already given, and moves to that player's next choice. Paladins running the addon reach the same plan automatically, with no chat needed.
 
@@ -23,6 +23,7 @@ Example: a Protection and a Holy paladin in a dungeon. The rogue gets Might from
 - **Keeps what you've already given**: a blessing you or another paladin running the addon already has on a player stays as it is, unless it clashes with someone else's or a lock says otherwise.
 - **A compact list**: one row per party member with the blessing, their name, a bar for the time left on yours and the timer. Hides while every blessing is fresh.
 - **Top Up** row that refreshes every blessing of yours with under 10 minutes left, one per press, before a pull.
+- **Smart macro**: one action-bar button that casts the right blessing on your friendly target (your planned one, or the best one they're missing), or tops up your group when you have no friendly target. Made with `/nbless macro` or from the settings, and kept up to date out of combat.
 - **Greater Blessings** in raids, one row per class.
 - **Lists by spec**: a Feral druid gets Kings and Might, a Balance druid Wisdom and Kings, an Enhancement shaman Might first. The addon learns specs by inspecting nearby group members out of combat and shares them with the other paladins; until a spec is known, the group role is used.
 - **Edit the lists**: change the order for any class or spec in the settings. In a group, the leader's lists are used, so every paladin plans the same way.
@@ -43,6 +44,7 @@ Blessings and Greater Blessings both last one hour in Forever. Every duration co
 | `/nbless tank <name>` | Mark a player as a tank, not a tank, or back to automatic (or target them and leave out the name). |
 | `/nbless config` | Open the settings. |
 | `/nbless announce` | Post the current assignments to group chat. |
+| `/nbless macro` | Make the smart blessing macro and put it on your cursor. |
 | `/nbless lock` / `/nbless unlock` | Lock or unlock the bar. |
 | `/nbless reset` | Reset the bar's position. |
 | `/nbless check` | Test what the addon needs in your game client and save the results. |

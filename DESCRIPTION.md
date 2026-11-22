@@ -13,6 +13,7 @@ When two or more paladins run the addon, they all reach the same plan automatica
 - **Keeps what you've already given**: a blessing you or another paladin running the addon already has on a player stays as it is, unless it clashes with someone else's or a lock says otherwise.
 - **A compact list**: one row per party member with the blessing it will cast, their name, a bar for the time left on yours and the timer. Click a row to cast. The list hides while every blessing is fresh.
 - **Top Up**: refreshes every blessing of yours with less than 10 minutes left, one per press, so nothing drops in the middle of a fight.
+- **Smart macro**: one action-bar button that casts the right blessing on your friendly target (your planned one, or the best one they're missing), or tops up your group when you have no friendly target. Made with `/nbless macro` or from the settings, and kept up to date out of combat.
 - **Greater Blessings in raids**: one row per class.
 - **Lists by spec**: a Feral druid gets Kings and Might, a Balance druid Wisdom and Kings, an Enhancement shaman Might first. The addon learns specs by inspecting nearby group members out of combat and shares them with the other paladins; until a spec is known, the group role is used.
 - **Edit the lists**: change the order for any class or spec in the settings. In a group, the leader's lists are used, so every paladin plans the same way.
@@ -52,6 +53,7 @@ The game doesn't allow buttons to change during combat. If the plan changes mid-
 | `/nbless tank <name>` | Mark a player as a tank, not a tank, or back to automatic (or target them and leave out the name). |
 | `/nbless config` | Open the settings. |
 | `/nbless announce` | Post the current assignments to group chat. |
+| `/nbless macro` | Make the smart blessing macro and put it on your cursor. |
 | `/nbless lock` / `/nbless unlock` | Lock or unlock the bar. |
 | `/nbless reset` | Reset the bar's position. |
 | `/nbless check` | Test what the addon needs in your game client and save the results (for bug reports). |
