@@ -6,7 +6,7 @@ local L = ns.L
 
 ns.DEFAULTS = {
     locked = false,
-    vertical = false,
+    hideWhenFresh = true,               -- hide the bar until a blessing is under the warning time
     scale = 1,
     lean = nil,                         -- your blessing leanings (nil = from your talents)
     auraLean = { "devotion", "retribution", "concentration" },

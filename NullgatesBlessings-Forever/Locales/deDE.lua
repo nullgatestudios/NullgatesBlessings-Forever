@@ -47,7 +47,7 @@ ns.RegisterLanguagePack("deDE", "Deutsch", {
     ["Show the plan"] = "Plan anzeigen",
     ["Show the Top Up button"] = "Schaltfläche „Auffrischen“ anzeigen",
     ["Smart blessing assignments that check what every player already has and coordinate paladins."] = "Intelligente Segenszuteilung, die prüft, was jeder Spieler schon hat, und Paladine abstimmt.",
-    ["Stack the buttons vertically"] = "Schaltflächen untereinander anordnen",
+    ["Hide the bar while every blessing is fresh"] = "Leiste ausblenden, solange alle Segen frisch sind",
     ["Target a player or type their name after /nbless tank."] = "Wähle einen Spieler als Ziel oder gib seinen Namen nach /nbless tank ein.",
     ["test what the addon needs in this client (results are saved)"] = "testen, was das Addon in diesem Client braucht (Ergebnisse werden gespeichert)",
     ["The language changes after you type /reload."] = "Die Sprache ändert sich, nachdem du /reload eingibst.",

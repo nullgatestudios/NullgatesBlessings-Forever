@@ -47,7 +47,7 @@ ns.RegisterLanguagePack("koKR", "한국어", {
     ["Show the plan"] = "계획 보기",
     ["Show the Top Up button"] = "갱신 버튼 표시",
     ["Smart blessing assignments that check what every player already has and coordinate paladins."] = "각 플레이어가 이미 가진 축복을 확인하고 성기사끼리 조율하는 똑똑한 축복 배분.",
-    ["Stack the buttons vertically"] = "버튼을 세로로 쌓기",
+    ["Hide the bar while every blessing is fresh"] = "모든 축복이 충분히 남아 있으면 바 숨기기",
     ["Target a player or type their name after /nbless tank."] = "플레이어를 대상으로 하거나 /nbless tank 뒤에 이름을 입력하세요.",
     ["test what the addon needs in this client (results are saved)"] = "이 클라이언트에서 애드온에 필요한 기능 테스트 (결과 저장됨)",
     ["The language changes after you type /reload."] = "/reload를 입력하면 언어가 바뀝니다.",

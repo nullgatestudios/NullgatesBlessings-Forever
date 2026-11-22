@@ -1,6 +1,6 @@
 # Nullgate's Blessings - Forever
 
-> **Status: beta** (1.0.0-beta.3). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
+> **Status: beta** (1.0.0-beta.4). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
 
 **Nullgate's Blessings** is a paladin addon for **World of Warcraft: Forever** that works out who should give which blessing to whom. It checks the blessings every player already has, skips any another paladin has already given, and moves to that player's next choice. Paladins running the addon reach the same plan automatically, with no chat needed.
 
@@ -20,9 +20,10 @@ Example: a Protection and a Holy paladin in a dungeon. The rogue gets Might from
 ## Features
 
 - **Smart assignments** from wish lists, leanings and the blessings already on each player.
-- **Party buttons**: one per party member, showing the blessing it will cast and the time left on yours.
-- **Top Up** button that refreshes every blessing of yours with under 10 minutes left, one per press, before a pull.
-- **Greater Blessing buttons** per class in raids.
+- **Keeps what you've already given**: a blessing you or another paladin running the addon already has on a player stays as it is, unless it clashes with someone else's or a lock says otherwise.
+- **A compact list**: one row per party member with the blessing, their name, a bar for the time left on yours and the timer. Hides while every blessing is fresh.
+- **Top Up** row that refreshes every blessing of yours with under 10 minutes left, one per press, before a pull.
+- **Greater Blessings** in raids, one row per class.
 - **Tank detection** from role selection and the raid's Main Tank, with your own marking on top. Tanks never get Salvation.
 - **Locks**: "Bob always gets Salvation from me", or leader locks for the whole group.
 - **Aura assignments**, an optional announcement to group chat, and a Symbol of Kings warning.

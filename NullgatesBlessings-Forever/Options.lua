@@ -79,7 +79,7 @@ function Options.Build(container)
     local y = -12
     y = Header(container, L["Bar"], y)
     y = Check(container, L["Lock the bar (unlock to drag it)"], function() return db.locked end, function(v) db.locked = v end, y)
-    y = Check(container, L["Stack the buttons vertically"], function() return db.vertical end, function(v) db.vertical = v end, y)
+    y = Check(container, L["Hide the bar while every blessing is fresh"], function() return db.hideWhenFresh end, function(v) db.hideWhenFresh = v end, y)
     y = Stepper(container, L["Bar scale"], function() return db.scale end, function(v) db.scale = v end, 0.5, 2, 0.1, "%.1f", y)
     y = Check(container, L["Show the Top Up button"], function() return db.showTopUp end, function(v) db.showTopUp = v end, y)
     y = Check(container, L["Show the aura button"], function() return db.showAura end, function(v) db.showAura = v end, y)

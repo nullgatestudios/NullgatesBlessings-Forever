@@ -4,7 +4,8 @@
 -- For each player, the paladins (sorted by name) are given distinct blessings from the player's wish
 -- list, skipping blessings already on the player from a paladin without the addon. Every combination
 -- is tried; the best gives each player their highest-wished blessings, then follows each paladin's
--- leanings. Locks are applied first and everyone else plans around them.
+-- leanings. Locks are applied first, then blessings paladins already have on the player are kept,
+-- and everyone else plans around them.
 local _, ns = ...
 
 local Engine = {}
@@ -52,9 +53,10 @@ local function IndexOf(list, value)
 end
 
 -- Picks blessings for one player. paladins: sorted { name, known = set, lean = list }; wish: list;
--- taken: set of keys already on the player from paladins without the addon; locked: [name] = key.
--- Returns [paladinName] = key.
-function Engine.AssignPlayer(paladins, wish, taken, locked)
+-- taken: set of keys already on the player from paladins without the addon; locked: [name] = key;
+-- current: [name] = key already on the player from that paladin, kept when it's on the wish list and
+-- doesn't clash. Returns [paladinName] = key.
+function Engine.AssignPlayer(paladins, wish, taken, locked, current)
     local result, used = {}, {}
     for k in pairs(taken or {}) do used[k] = true end
     local free = {}
@@ -67,6 +69,17 @@ function Engine.AssignPlayer(paladins, wish, taken, locked)
             free[#free + 1] = p
         end
     end
+    local unkept = {}
+    for _, p in ipairs(free) do
+        local key = current and current[p.name]
+        if key and p.known[key] and not used[key] and IndexOf(wish, key) then
+            result[p.name] = key
+            used[key] = true
+        else
+            unkept[#unkept + 1] = p
+        end
+    end
+    free = unkept
     local candidates = {}
     for _, key in ipairs(wish) do if not used[key] then candidates[#candidates + 1] = key end end
 
@@ -99,7 +112,8 @@ function Engine.AssignPlayer(paladins, wish, taken, locked)
     return result
 end
 
--- The whole plan. paladins: as above (any order); players: { name, class, role, tank, taken = set };
+-- The whole plan. paladins: as above (any order); players: { name, class, role, tank, taken = set,
+-- current = [paladin] = key };
 -- locks: [paladinName][playerName] = key. Returns plan[paladinName][playerName] = key.
 function Engine.Assign(paladins, players, locks)
     local sorted = {}
@@ -114,7 +128,7 @@ function Engine.Assign(paladins, players, locks)
             if key then locked[p.name] = key end
         end
         local wish = Engine.Wishes(player.class, player.role, player.tank)
-        for name, key in pairs(Engine.AssignPlayer(sorted, wish, player.taken, locked)) do plan[name][player.name] = key end
+        for name, key in pairs(Engine.AssignPlayer(sorted, wish, player.taken, locked, player.current)) do plan[name][player.name] = key end
     end
     return plan
 end

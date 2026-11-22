@@ -2,6 +2,18 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.4] - 2026-11-21
+
+### Changed
+
+- **The bar is now a list.** Top Up sits on top in gold and names who it will bless next, with your aura beside it. Below it, one row per party member (or class in a raid): the blessing it will cast, their full name in class colour, a bar for the time left on yours and the timer.
+- **The list hides while every blessing is fresh** and comes back when one of yours is missing or under the warning time. You can turn this off in the settings; it always shows while unlocked so you can move it. This replaces the "stack the buttons vertically" setting.
+- **Blessings already given are kept.** If you or another paladin running the addon already has a blessing on a player, the plan keeps it instead of asking for a switch, unless it clashes with someone else's blessing, isn't on that player's list or a lock says otherwise.
+
+### Fixed
+
+- No more red marks on the buttons during combat. The tooltip still says when the list is waiting for combat to end.
+
 ## [1.0.0-beta.3] - 2026-11-21
 
 ### Fixed

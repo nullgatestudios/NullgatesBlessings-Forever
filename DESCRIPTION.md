@@ -10,9 +10,10 @@ When two or more paladins run the addon, they all reach the same plan automatica
 
 - **Smart assignments**: every player has a wish list by class and role, every paladin has leanings based on their talents, and the addon picks the best combination so nobody gets the same blessing twice.
 - **Reads what's already there**: if another paladin has given the rogue Might, your button for that rogue picks Kings instead. This works even when the other paladin doesn't use the addon.
-- **Party buttons**: one per party member, showing the blessing it will cast and the time left on yours.
+- **Keeps what you've already given**: a blessing you or another paladin running the addon already has on a player stays as it is, unless it clashes with someone else's or a lock says otherwise.
+- **A compact list**: one row per party member with the blessing it will cast, their name, a bar for the time left on yours and the timer. Click a row to cast. The list hides while every blessing is fresh.
 - **Top Up**: refreshes every blessing of yours with less than 10 minutes left, one per press, so nothing drops in the middle of a fight.
-- **Greater Blessing buttons** per class for raids, with how many of each class are missing it.
+- **Greater Blessings in raids**: one row per class.
 - **Tank detection** from role selection and the raid's Main Tank, with your own marking on top. Tanks never get Salvation.
 - **Locks**: "Bob always gets Salvation from me", or leader locks for the whole group. Everyone else plans around them.
 - **Aura assignments**, an optional announcement to group chat, and a warning when your Symbol of Kings run low.
@@ -37,7 +38,7 @@ Neither paladin has to plan anything. If one of them doesn't know Kings, or a th
 
 Blessings and Greater Blessings last one hour in Forever, and the addon uses the real durations from the game.
 
-The game doesn't allow buttons to change during combat. If the plan changes mid-fight, the buttons update as soon as combat ends.
+The game doesn't allow buttons to change during combat. If the plan changes mid-fight, the list updates as soon as combat ends.
 
 ---
 

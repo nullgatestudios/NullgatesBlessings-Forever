@@ -47,7 +47,7 @@ ns.RegisterLanguagePack("zhTW", "繁體中文", {
     ["Show the plan"] = "顯示計畫",
     ["Show the Top Up button"] = "顯示「刷新」按鈕",
     ["Smart blessing assignments that check what every player already has and coordinate paladins."] = "智慧分配祝福：檢查每位玩家已有的祝福並協調聖騎士。",
-    ["Stack the buttons vertically"] = "按鈕縱向排列",
+    ["Hide the bar while every blessing is fresh"] = "所有祝福都充足時隱藏動作條",
     ["Target a player or type their name after /nbless tank."] = "選取一名玩家，或在 /nbless tank 後輸入名字。",
     ["test what the addon needs in this client (results are saved)"] = "測試插件在此用戶端中需要的功能（結果會儲存）",
     ["The language changes after you type /reload."] = "輸入 /reload 後語言才會改變。",

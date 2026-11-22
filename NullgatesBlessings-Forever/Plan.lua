@@ -21,8 +21,8 @@ function Plan.Build()
 
     local info = {}
     for _, m in ipairs(members) do
-        local taken, mine = ns.Group.Blessings(m.unit, addonNames, now)
-        info[m.name] = { member = m, taken = taken, mine = mine, tank = ns.Group.IsTank(m, tanks, notTanks) }
+        local taken, mine, current = ns.Group.Blessings(m.unit, addonNames, now)
+        info[m.name] = { member = m, taken = taken, mine = mine, current = current, tank = ns.Group.IsTank(m, tanks, notTanks) }
     end
 
     local players, columns = {}, {}
@@ -43,12 +43,28 @@ function Plan.Build()
             end
             local taken = {}
             for key, c in pairs(counts) do if c * 2 >= n then taken[key] = true end end
-            players[#players + 1] = { name = class, class = class, role = "NONE", taken = taken }
+            -- A paladin's blessing is kept for a class when at least half of it has it from them.
+            local given = {}
+            for _, m in ipairs(byClass[class]) do
+                for pal, key in pairs(info[m.name].current) do
+                    local id = pal .. ":" .. key
+                    given[id] = (given[id] or 0) + 1
+                end
+            end
+            local current, ids = {}, {}
+            for id in pairs(given) do ids[#ids + 1] = id end
+            table.sort(ids)
+            for _, id in ipairs(ids) do
+                local pal, key = id:match("^(.*):(%a+)$")
+                if given[id] * 2 >= n and (not current[pal] or given[id] > given[pal .. ":" .. current[pal]]) then current[pal] = key end
+            end
+            players[#players + 1] = { name = class, class = class, role = "NONE", taken = taken, current = current }
             columns[#columns + 1] = { name = class, class = class, members = byClass[class] }
         end
     else
         for _, m in ipairs(members) do
-            players[#players + 1] = { name = m.name, class = m.class, role = m.role, tank = info[m.name].tank, taken = info[m.name].taken }
+            players[#players + 1] = { name = m.name, class = m.class, role = m.role, tank = info[m.name].tank, taken = info[m.name].taken,
+                                      current = info[m.name].current }
             columns[#columns + 1] = { name = m.name, class = m.class, members = { m } }
         end
     end
@@ -82,13 +98,14 @@ function Plan.Aura(key)
     for _, a in ipairs(ns.AURAS) do if a.key == key then return a end end
 end
 
--- The spell to cast for a target: the highest rank of the (Greater) blessing the target can receive.
+-- The spell to cast for a target: the highest rank of the (Greater) blessing the target can receive,
+-- and how long it lasts.
 function Plan.Spell(target)
     local b = Plan.Blessing(target.key)
     if not b then return nil end
     local ranks = target.greater and b.greater or b.single
     local rank = ns.Engine.Rank(ranks, target.level, ns.Group.IsKnown)
-    return rank and rank[1]
+    if rank then return rank[1], rank[3] end
 end
 
 -- The target to top up next: missing first, then the least time left under the top-up limit.

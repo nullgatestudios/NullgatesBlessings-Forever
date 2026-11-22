@@ -128,26 +128,27 @@ end
 Group.ReadAura = ReadAura
 
 -- The last full read of each unit, used while the game hides its auras.
-local lastRead = {} -- [unit] = { name, at, taken, mine }
+local lastRead = {} -- [unit] = { name, at, taken, mine, current }
 
 local function LastRead(unit, now)
     local last, name = lastRead[unit], UnitName(unit)
-    local taken, mine = {}, {}
+    local taken, mine, current = {}, {}, {}
     if last and not IsSecret(name) and last.name == name then
         for key in pairs(last.taken) do taken[key] = true end
         for key, left in pairs(last.mine) do
             left = left - (now - last.at)
             if left > 0 then mine[key] = left end
         end
+        for pal, key in pairs(last.current) do current[pal] = key end
     end
-    return taken, mine
+    return taken, mine, current
 end
 
 -- The blessings on a unit: taken = set of keys cast by paladins not in `addonNames`; mine =
--- [key] = seconds left on blessings you cast. While the game hides the unit's auras, the last full
--- read is used.
+-- [key] = seconds left on blessings you cast; current = [paladin] = key for you and the paladins in
+-- `addonNames`. While the game hides the unit's auras, the last full read is used.
 function Group.Blessings(unit, addonNames, now)
-    local taken, mine, map, me = {}, {}, NameToKey(), Group.Me()
+    local taken, mine, current, map, me = {}, {}, {}, NameToKey(), Group.Me()
     for i = 1, 40 do
         local a = ReadAura(unit, i)
         if a == nil then break end
@@ -156,16 +157,20 @@ function Group.Blessings(unit, addonNames, now)
         local key = name and map[name]
         if key then
             local casterName = caster and UnitName(caster)
+            if IsSecret(casterName) then casterName = nil end
             if casterName == me then
                 mine[key] = (expires and expires > 0) and (expires - now) or math.huge
-            elseif not (casterName and addonNames[casterName]) then
+                current[me] = key
+            elseif casterName and addonNames[casterName] then
+                current[casterName] = key
+            else
                 taken[key] = true
             end
         end
     end
     local name = UnitName(unit)
-    lastRead[unit] = { name = not IsSecret(name) and name or nil, at = now, taken = taken, mine = mine }
-    return taken, mine
+    lastRead[unit] = { name = not IsSecret(name) and name or nil, at = now, taken = taken, mine = mine, current = current }
+    return taken, mine, current
 end
 
 -- --- Your own info and the paladins ------------------------------------------------------

@@ -163,6 +163,7 @@ OK(slot.Shiv and slot.Shiv.template == "SecureActionButtonTemplate", "a secure b
 OK(slot.Shiv.attributes.type == "spell" and slot.Shiv.attributes.spell == mightTop and slot.Shiv.attributes.unit == "party2",
     "the rogue's button casts our top Blessing of Might on the rogue")
 OK(slot.Shiv.glow.shown, "missing: the button is red")
+OK(NullgatesBlessingsBar.shown, "something's missing: the bar shows")
 
 -- --- Blessings land; one from a paladin without the addon -------------------------------------
 auras.party2 = { { "Blessing of Might", now + 3600, "player" } }
@@ -187,6 +188,16 @@ table.insert(auras.party3, { "Blessing of Kings", now + 3600, "raid9" }) -- stil
 Fire("UNIT_AURA", "party4")
 Flush()
 OK(topUp.attributes.unit == "party4", "Top Up picks the one with 5 minutes left")
+db.locked = true
+auras.party4[1][2] = now + 3000
+Fire("UNIT_AURA", "party4")
+Flush()
+OK(not NullgatesBlessingsBar.shown, "locked and every blessing fresh: the bar hides")
+db.hideWhenFresh = false
+ns.Buttons.UpdateTimers()
+OK(NullgatesBlessingsBar.shown, "unless hiding is turned off")
+db.hideWhenFresh, db.locked = true, false
+auras.party4[1][2] = now + 300
 
 -- --- Combat ------------------------------------------------------------------------------------
 inCombat = true

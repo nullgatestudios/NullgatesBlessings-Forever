@@ -60,6 +60,22 @@ for _, p in ipairs(players) do
     EQ(again.Ironwall[p.name] .. "/" .. again.Brightmend[p.name], Pair(p.name), "same plan in any order: " .. p.name)
 end
 
+-- --- Blessings already given are kept ------------------------------------------------------------
+-- A tester's case: Herald put Might on themself and a friend gave them Wisdom; it asked for Kings.
+local herald = { name = "Herald", known = ALL, lean = E.DefaultLean(3) }
+local friend = { name = "Abandon", known = ALL, lean = E.DefaultLean(1) }
+local me = { { name = "Herald", class = "PALADIN", role = "NONE", current = { Herald = "might", Abandon = "wisdom" } } }
+plan = E.Assign({ herald, friend }, me, {})
+EQ(plan.Herald.Herald .. "/" .. plan.Abandon.Herald, "might/wisdom", "both paladins running the addon: what's on stays")
+me = { { name = "Herald", class = "PALADIN", role = "NONE", taken = Set("wisdom"), current = { Herald = "might" } } }
+EQ(E.Assign({ herald }, me, {}).Herald.Herald, "might", "the friend without the addon: your Might stays, no switch to Kings")
+plan = E.Assign({ prot }, { { name = "Shiv", class = "ROGUE", current = { Ironwall = "kings" }, taken = Set("kings") } }, {})
+EQ(plan.Ironwall.Shiv, "might", "a kept blessing that someone else already gives is replaced")
+plan = E.Assign({ prot }, { { name = "Shiv", class = "ROGUE", current = { Ironwall = "wisdom" } } }, {})
+EQ(plan.Ironwall.Shiv, "might", "one that isn't on the player's wish list is replaced")
+plan = E.Assign({ prot }, { { name = "Shiv", class = "ROGUE", current = { Ironwall = "kings" } } }, { Ironwall = { Shiv = "salvation" } })
+EQ(plan.Ironwall.Shiv, "salvation", "a lock beats what's on")
+
 -- --- The other paladin doesn't run the addon ---------------------------------------------
 plan = E.Assign({ prot }, { { name = "Shiv", class = "ROGUE", taken = Set("kings") } }, {})
 EQ(plan.Ironwall.Shiv, "might", "Kings already on the rogue from someone else: Might")
