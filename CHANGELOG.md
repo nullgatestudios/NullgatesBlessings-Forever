@@ -2,6 +2,13 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.2] - 2026-11-21
+
+### Fixed
+
+- No more error when the game hides a group member's range from addons ("attempt to perform boolean test on local 'checked'"). That player is treated as in range.
+- Blessings the game hides from addons, usually in combat, are skipped instead of causing an error.
+
 ## [1.0.0-beta.1] - 2026-11-20
 
 First test version, looking for paladins to try it, ideally in groups with more than one paladin.
