@@ -146,13 +146,15 @@ events:SetScript("OnEvent", function(_, event, ...)
         return
     elseif event == "UNIT_AURA" then
         if arg1 == "player" or (arg1 and (arg1:match("^party%d") or arg1:match("^raid%d"))) then ns.Refresh() end
+    elseif event == "UPDATE_SHAPESHIFT_FORM" or event == "UPDATE_SHAPESHIFT_FORMS" then
+        ns.Refresh() -- an aura turned on or off
     else -- spells or talents changed
         ns.Group.Hello()
         ns.Refresh()
     end
 end)
 for _, event in ipairs({ "ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_ENABLED", "CHAT_MSG_ADDON", "GROUP_ROSTER_UPDATE",
-    "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED" }) do
+    "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS" }) do
     events:RegisterEvent(event)
 end
 

@@ -166,8 +166,43 @@ local function SetTarget(row, target, spell, duration)
     row.icon:SetDesaturated(not (spell and unit))
 end
 
--- Whether any of your blessings is missing or under the warning time.
+-- Whether an aura of yours is on: from the stance bar (readable in combat), else your buffs.
+local function AuraActive(a)
+    if not a then return false end
+    local ids = {}
+    for _, r in ipairs(a.ranks) do ids[r[1]] = true end
+    if GetNumShapeshiftForms and GetShapeshiftFormInfo then
+        for i = 1, GetNumShapeshiftForms() or 0 do
+            local _, active, _, spellID = GetShapeshiftFormInfo(i)
+            if active and spellID and ids[spellID] then return true end
+        end
+    end
+    local names = {}
+    for id in pairs(ids) do
+        local n = ns.Group.SpellName(id)
+        if n then names[n] = true end
+    end
+    for i = 1, 40 do
+        local buff = ns.Group.ReadAura("player", i)
+        if not buff then return false end
+        if names[buff.name] then return true end
+    end
+    return false
+end
+
+-- Your assigned aura, and whether it's already on.
+local function MyAura()
+    local key = state and state.auras[ns.Group.Me()]
+    local a = key and ns.Plan.Aura(key)
+    return a, AuraActive(a)
+end
+
+-- Whether any of your blessings is missing or under the warning time, or your aura is off.
 local function Needed()
+    if ns.db.showAura and aura.spell then
+        local _, on = MyAura()
+        if not on then return true end
+    end
     local warn = (ns.db.warnMinutes or 5) * 60
     for _, t in ipairs(state and state.targets or {}) do
         if t.remaining < warn then return true end
@@ -200,16 +235,15 @@ function Buttons.Update()
         SetTarget(topUp, next, next and ns.Plan.Spell(next))
         topUp.label:SetText(L["Top Up"])
         topUp.timer:SetText(next and Label(next) or "")
-        local auraKey = state.auras[ns.Group.Me()]
-        local a = auraKey and ns.Plan.Aura(auraKey)
+        local a, auraOn = MyAura()
         local rank = a and ns.Engine.Rank(a.ranks, 99, ns.Group.IsKnown)
         aura.spell = rank and rank[1]
         aura:SetAttribute("type", aura.spell and "spell" or nil)
         aura:SetAttribute("spell", aura.spell)
         aura.icon:SetTexture(SpellIcon(aura.spell) or ICON)
 
-        -- Layout: Top Up and the aura on the first line, then one row per target.
-        local showTopUp, showAura = ns.db.showTopUp, ns.db.showAura and aura.spell ~= nil
+        -- Layout: Top Up and the aura on the first line (the aura only while it's off), then one row per target.
+        local showTopUp, showAura = ns.db.showTopUp, ns.db.showAura and aura.spell ~= nil and not auraOn
         local y = -GAP
         topUp:SetShown(showTopUp)
         aura:SetShown(showAura)
@@ -269,6 +303,8 @@ function Buttons.UpdateTimers()
         end
     end
     topUp.glow:SetShown(topUp.target ~= nil and topUp.target.remaining < warn)
+    local _, auraOn = MyAura()
+    aura:SetAlpha(auraOn and 0.3 or 1) -- in combat the button can't hide; it fades once the aura is on
     UpdateVisibility()
 end
 

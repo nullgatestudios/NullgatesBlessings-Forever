@@ -2,6 +2,12 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.5] - 2026-11-21
+
+### Changed
+
+- **The aura button only shows while your assigned aura is off.** Once it's on, the button goes away (in combat it fades instead, and goes away when combat ends). If your aura drops, for example after dying, the button and the list come back.
+
 ## [1.0.0-beta.4] - 2026-11-21
 
 ### Changed

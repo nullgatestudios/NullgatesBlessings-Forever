@@ -190,6 +190,9 @@ Flush()
 OK(topUp.attributes.unit == "party4", "Top Up picks the one with 5 minutes left")
 db.locked = true
 auras.party4[1][2] = now + 3000
+local onAura = ns.Plan.Aura(ns.Buttons.State().auras.Ironwall) -- your aura is on too
+function GetNumShapeshiftForms() return 1 end
+function GetShapeshiftFormInfo() return "tex", true, true, onAura.ranks[#onAura.ranks][1] end
 Fire("UNIT_AURA", "party4")
 Flush()
 OK(not NullgatesBlessingsBar.shown, "locked and every blessing fresh: the bar hides")
@@ -197,6 +200,7 @@ db.hideWhenFresh = false
 ns.Buttons.UpdateTimers()
 OK(NullgatesBlessingsBar.shown, "unless hiding is turned off")
 db.hideWhenFresh, db.locked = true, false
+GetNumShapeshiftForms, GetShapeshiftFormInfo = nil, nil
 auras.party4[1][2] = now + 300
 
 -- --- Combat ------------------------------------------------------------------------------------
@@ -259,6 +263,19 @@ symbols = 3
 Fire("UNIT_AURA", "player")
 Flush()
 OK(Printed("Low on Symbol of Kings: 3 left."), "low on Symbol of Kings in a raid: a warning")
+
+-- --- The aura button only while your aura is off ------------------------------------------------------
+local myAura = ns.Plan.Aura(ns.Buttons.State().auras.Ironwall)
+local formOn = false
+function GetNumShapeshiftForms() return 1 end
+function GetShapeshiftFormInfo() return "tex", formOn, true, myAura.ranks[#myAura.ranks][1] end
+ns.Buttons.Update()
+OK(ns.Buttons.aura.shown, "aura off: the aura button shows")
+formOn = true
+Fire("UPDATE_SHAPESHIFT_FORM")
+Flush()
+OK(not ns.Buttons.aura.shown, "aura on: no aura button")
+formOn = false
 
 -- --- Auras the game hides from addons (secret values, usually in combat) ------------------------------
 auras.raid1 = { { "Blessing of Kings", 4000, "player" }, { "Blessing of Wisdom", 0, "raid9" } }
