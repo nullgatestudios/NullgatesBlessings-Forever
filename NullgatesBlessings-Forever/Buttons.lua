@@ -1,5 +1,6 @@
--- Nullgate's Blessings: your bar. A list with Top Up (whoever's blessing from you is missing or
--- lowest) and your aura on top, then one secure row per target in your plan (each party member in a
+-- Nullgate's Blessings: your bar. A list with Top Up (your Oath of Light when it's running out, else
+-- whoever's blessing from you is missing or lowest) and your aura on top, your Oath of Light on the
+-- tank (with the talent), then one secure row per target in your plan (each party member in a
 -- party, each class in a raid) with the time left on yours. Targets and spells can only change out
 -- of combat; the bar hides while every blessing is fresh.
 local _, ns = ...
@@ -11,7 +12,7 @@ ns.Buttons = Buttons
 local WIDTH, ROW, ICON_SIZE, GAP, SLOTS = 180, 22, 18, 3, 10
 local ICON = "Interface\\Icons\\Spell_Holy_FistOfJustice"
 local bar
-local slots, topUp, aura = {}, nil, nil
+local slots, topUp, aura, oath = {}, nil, nil, nil
 Buttons.slots = slots
 local state -- the last plan
 
@@ -150,8 +151,9 @@ function Buttons.Create()
     bar.background:SetColorTexture(0.08, 0.1, 0.13, 0.75)
     topUp = NewRow("NullgatesBlessingsTopUp", true)
     aura = NewAuraButton()
+    oath = NewRow("NullgatesBlessingsOath")
     for i = 1, SLOTS do slots[i] = NewRow("NullgatesBlessingsSlot" .. i) end
-    Buttons.topUp, Buttons.aura = topUp, aura
+    Buttons.topUp, Buttons.aura, Buttons.oath = topUp, aura, oath
     RestorePosition()
     Buttons.Update()
 end
@@ -197,12 +199,14 @@ local function MyAura()
     return a, AuraActive(a)
 end
 
--- Whether any of your blessings is missing or under the warning time, or your aura is off.
+-- Whether any of your blessings is missing or under the warning time, your Oath of Light is running
+-- out, or your aura is off.
 local function Needed()
     if ns.db.showAura and aura.spell then
         local _, on = MyAura()
         if not on then return true end
     end
+    if state and state.oath and state.oath.remaining < ns.Plan.OATH_REFRESH then return true end
     local warn = (ns.db.warnMinutes or 5) * 60
     for _, t in ipairs(state and state.targets or {}) do
         if t.remaining < warn then return true end
@@ -212,7 +216,7 @@ end
 
 local function UpdateVisibility()
     ns.WhenSafe("visibility", function()
-        local hasTargets = state and #state.targets > 0
+        local hasTargets = state and (#state.targets > 0 or state.oath ~= nil)
         local show = not ns.db.locked or (hasTargets and (not ns.db.hideWhenFresh or Needed()))
         bar:SetShown(show and true or false)
     end)
@@ -231,8 +235,11 @@ function Buttons.Update()
             row.label:SetText(t and Label(t) or "")
             row.label:SetTextColor(ClassColor(t and t.class))
         end
-        local next = ns.Plan.TopUp(state.targets, (ns.db.topUpMinutes or 10) * 60)
+        local next = ns.Plan.TopUp(state.targets, (ns.db.topUpMinutes or 10) * 60, state.oath)
         SetTarget(topUp, next, next and ns.Plan.Spell(next))
+        SetTarget(oath, state.oath, state.oath and ns.Plan.Spell(state.oath))
+        oath.label:SetText(state.oath and state.oath.label or "")
+        oath.label:SetTextColor(ClassColor(state.oath and state.oath.class))
         topUp.label:SetText(L["Top Up"])
         topUp.timer:SetText(next and Label(next) or "")
         local a, auraOn = MyAura()
@@ -259,6 +266,12 @@ function Buttons.Update()
             end
             y = y - ROW - GAP
         end
+        oath:SetShown(oath.target ~= nil)
+        if oath.target then
+            oath:ClearAllPoints()
+            oath:SetPoint("TOPLEFT", bar, "TOPLEFT", GAP, y)
+            y = y - ROW - GAP
+        end
         for _, row in ipairs(slots) do
             if row.target then
                 row:ClearAllPoints()
@@ -273,11 +286,11 @@ function Buttons.Update()
         bar:SetScale(ns.db.scale or 1)
         bar.background:SetShown(not ns.db.locked)
         for _, row in ipairs(slots) do row.stale = false end
-        topUp.stale = false
+        topUp.stale, oath.stale = false, false
     end)
     if not applied then
         for _, row in ipairs(slots) do row.stale = true end
-        topUp.stale = true
+        topUp.stale, oath.stale = true, true
     end
     Buttons.UpdateTimers()
 end
@@ -287,12 +300,12 @@ function Buttons.UpdateTimers()
     if not bar or not state then return end
     local warn = (ns.db.warnMinutes or 5) * 60
     local fillWidth = WIDTH - 2 * GAP - ROW
-    for _, row in ipairs(slots) do
+    local function Timer(row, rowWarn)
         local t = row.target
         if t then
             local left = t.remaining
             row.timer:SetText(left > 0 and Short(left) or L["Missing."])
-            row.glow:SetShown(left < warn)
+            row.glow:SetShown(left < rowWarn)
             local fraction = (left == math.huge and 1) or (row.duration and row.duration > 0 and math.min(1, left / row.duration)) or 0
             row.fill:SetWidth(math.max(1, fillWidth * fraction))
             row.fill:SetShown(fraction > 0)
@@ -302,7 +315,9 @@ function Buttons.UpdateTimers()
             row.fill:Hide()
         end
     end
-    topUp.glow:SetShown(topUp.target ~= nil and topUp.target.remaining < warn)
+    for _, row in ipairs(slots) do Timer(row, warn) end
+    Timer(oath, ns.Plan.OATH_REFRESH)
+    topUp.glow:SetShown(topUp.target ~= nil and topUp.target.remaining < (topUp.target.oath and ns.Plan.OATH_REFRESH or warn))
     local _, auraOn = MyAura()
     aura:SetAlpha(auraOn and 0.3 or 1) -- in combat the button can't hide; it fades once the aura is on
     UpdateVisibility()

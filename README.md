@@ -8,7 +8,7 @@
 
 ## How It Works
 
-- **Every player has a wish list** by class and spec: a rogue wants Might, then Kings, then Salvation; a mage wants Wisdom, then Kings; a Feral druid Kings, then Might.
+- **Every player has a wish list** by class and spec: a rogue wants Might, then Kings; a mage wants Wisdom, then Kings; a Feral druid Kings, then Might.
 - **Every paladin has leanings** suggested by their talents: Protection leans Might and Kings, Holy leans Wisdom and Kings. You can change your own.
 - **The addon reads what's already there.** If another paladin has given the rogue Might, your button for that rogue picks Kings instead. Paladins without the addon are handled from what they actually cast.
 - **No two paladins give the same blessing to the same player**, and nobody is given a blessing their paladins don't know.
@@ -27,8 +27,9 @@ Example: a Protection and a Holy paladin in a dungeon. The rogue gets Might from
 - **Greater Blessings** in raids, one row per class.
 - **Lists by spec**: a Feral druid gets Kings and Might, a Balance druid Wisdom and Kings, an Enhancement shaman Might first. The addon learns specs by inspecting nearby group members out of combat and shares them with the other paladins; until a spec is known, the group role is used.
 - **Edit the lists**: change the order for any class or spec in the settings. In a group, the leader's lists are used, so every paladin plans the same way.
-- **Tank detection** from role selection, the raid's Main Tank and Protection talents, with your own marking on top. Tanks never get Salvation.
-- **Locks**: "Bob always gets Salvation from me", or leader locks for the whole group.
+- **Oath of Light** on the marked tank when you have the talent, with its own row. Top Up refreshes it first when it has under a minute left.
+- **Tank detection** from role selection, the raid's Main Tank and Protection talents, with your own marking on top.
+- **Locks**: "Bob always gets Kings from me", or leader locks for the whole group.
 - **Aura assignments**, an optional announcement to group chat, and a Symbol of Kings warning.
 - **Settings** in its own window or inside Nullgate's Addon Config.
 

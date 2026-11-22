@@ -33,7 +33,8 @@ for _, b in ipairs(ns.BLESSINGS) do
     EQ(#b.greater > 0 and b.greater[1][3] == 3600, true, b.key .. ": Greater also one hour")
     EQ(b.reagent, 21177, b.key .. ": Greater uses Symbol of Kings")
 end
-EQ(#ns.BLESSINGS, 5, "five blessings (no Sanctuary in Forever)")
+EQ(#ns.BLESSINGS, 3, "three blessings (Forever 1.60.1.71037 removed Light and Salvation; no Sanctuary)")
+EQ(ns.OATH_OF_LIGHT and ns.OATH_OF_LIGHT[1] == 1328548 and ns.OATH_OF_LIGHT[2] == 300, true, "Oath of Light: spell 1328548, 5 minutes")
 EQ(#ns.AURAS >= 3, true, "auras")
 
 -- --- The dungeon example ----------------------------------------------------------------

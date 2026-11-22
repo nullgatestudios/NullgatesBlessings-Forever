@@ -6,9 +6,32 @@ local _, ns = ...
 local Plan = {}
 ns.Plan = Plan
 
--- { mode, plan, paladins, targets, columns, auras }
+-- Oath of Light is refreshed when it has less than this left (it lasts 5 minutes).
+Plan.OATH_REFRESH = 60
+
+-- Your Oath of Light target, when you have the talent: the marked tank who has your Oath (only one at
+-- a time), else the first tank in range, else the first tank. Not you.
+local function OathTarget(members, info, now)
+    local oath = ns.OATH_OF_LIGHT
+    if not (oath and ns.Group.IsKnown(oath[1])) then return nil end
+    local me, pick, pickLeft = ns.Group.Me(), nil, 0
+    for _, m in ipairs(members) do
+        if info[m.name].tank and m.name ~= me then
+            local left = ns.Group.MyAuraLeft(m.unit, oath[1], now)
+            if left == nil then left = math.huge end -- hidden from addons: assume it's fine until it can be read
+            if left > 0 then pick, pickLeft = m, left; break end
+            if not pick or (m.reachable and not pick.reachable) then pick, pickLeft = m, left end
+        end
+    end
+    if not pick then return nil end
+    return { label = pick.name, class = pick.class, key = "oath", oath = true, units = pick.reachable and { pick.unit } or {},
+             level = pick.level or 1, remaining = pickLeft }
+end
+
+-- { mode, plan, paladins, targets, columns, auras, oath }
 --   columns: the players (party) or classes (raid) in order, for the plan window
 --   targets: what you cast: { label, key, units = { unit, ... }, level, remaining, greater }
+--   oath: your Oath of Light target (same shape, key "oath"), or nil
 function Plan.Build()
     local now = GetTime()
     local members = ns.Group.Members()
@@ -88,11 +111,21 @@ function Plan.Build()
         end
     end
     return { mode = raid and "raid" or "party", plan = plan, paladins = paladins, columns = columns, targets = targets,
-             auras = auras, info = info, listSource = listSource }
+             auras = auras, info = info, listSource = listSource, oath = OathTarget(members, info, now) }
 end
 
 function Plan.Blessing(key)
     for _, b in ipairs(ns.BLESSINGS) do if b.key == key then return b end end
+end
+
+-- The keys of `list` (default: every blessing) that this client has. Forever 1.60.1.71037 removed
+-- Blessing of Light and Salvation.
+function Plan.Available(list)
+    local out = {}
+    for _, key in ipairs(list or ns.Engine.KEYS) do
+        if key and Plan.Blessing(key) then out[#out + 1] = key end
+    end
+    return out
 end
 
 function Plan.Aura(key)
@@ -102,6 +135,11 @@ end
 -- The spell to cast for a target: the highest rank of the (Greater) blessing the target can receive,
 -- and how long it lasts.
 function Plan.Spell(target)
+    if target.key == "oath" then
+        local oath = ns.OATH_OF_LIGHT
+        if oath then return oath[1], oath[2] end
+        return nil
+    end
     local b = Plan.Blessing(target.key)
     if not b then return nil end
     local ranks = target.greater and b.greater or b.single
@@ -109,8 +147,10 @@ function Plan.Spell(target)
     if rank then return rank[1], rank[3] end
 end
 
--- The target to top up next: missing first, then the least time left under the top-up limit.
-function Plan.TopUp(targets, limit)
+-- The target to top up next: your Oath of Light when it's missing or running out, then blessings:
+-- missing first, then the least time left under the top-up limit.
+function Plan.TopUp(targets, limit, oath)
+    if oath and #oath.units > 0 and oath.remaining < Plan.OATH_REFRESH then return oath end
     local best
     for _, t in ipairs(targets) do
         if #t.units > 0 and t.remaining < limit and (not best or t.remaining < best.remaining) then best = t end

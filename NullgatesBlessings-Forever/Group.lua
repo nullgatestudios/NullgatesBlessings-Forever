@@ -198,6 +198,24 @@ function Group.Blessings(unit, addonNames, now)
     return taken, mine, current
 end
 
+-- Seconds left on your own aura `spellID` on a unit (math.huge when it doesn't run out), 0 when it
+-- isn't there, or nil while the game hides the unit's auras.
+function Group.MyAuraLeft(unit, spellID, now)
+    local name, me = Group.SpellName(spellID), Group.Me()
+    for i = 1, 40 do
+        local a = ReadAura(unit, i)
+        if a == nil then return 0 end
+        if a == false then return nil end
+        if a.spellId == spellID or (name and a.name == name) then
+            local caster = a.sourceUnit and UnitName(a.sourceUnit)
+            if not IsSecret(caster) and caster == me then
+                return (a.expirationTime and a.expirationTime > 0) and (a.expirationTime - now) or math.huge
+            end
+        end
+    end
+    return 0
+end
+
 -- --- Your own info and the paladins ------------------------------------------------------
 
 function Group.MyInfo()

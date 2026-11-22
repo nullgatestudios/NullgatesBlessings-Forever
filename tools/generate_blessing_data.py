@@ -3,6 +3,7 @@
 The paladin's blessings (single and Greater, every trainer rank with the level it's learned at and its
 duration, and the Greater blessings' reagent) and auras (every rank). Blessing of Salvation is called
 "Salvation" in Forever and its Greater form "Mass Salvation"; Blessing of Sanctuary doesn't exist.
+Also Oath of Light, Forever's Holy talent (one ally at a time; no trainer level).
 
 Usage:
   python tools/generate_blessing_data.py [--build 1.60.1.70532] [--data DIR]
@@ -79,18 +80,24 @@ def build(t):
     for key, single, greater in BLESSINGS:
         s, g = ranks(single), ranks(greater)
         if not s:
-            sys.exit("no ranks for " + single)
+            print("not in this build:", single)  # Blessing of Light was removed in 1.60.1.71037
+            continue
         blessings.append({"key": key, "single": s, "greater": g, "reagent": reagents.get(str(g[0][0]), 0) if g else 0,
                           "name": single})
+    oath = None
+    for r in t["SkillLineAbility"]:
+        if r["SkillLine"] in PALADIN_LINES and names.get(r["Spell"]) == "Oath of Light":
+            m = misc.get(r["Spell"])
+            oath = (to_int(r["Spell"]), durations.get(m["DurationIndex"], 0) // 1000 if m else 0)
     auras = []
     for key, name in AURAS:
         r = ranks(name)
         if r:
             auras.append({"key": key, "ranks": r, "name": name})
-    return blessings, auras
+    return blessings, auras, oath
 
 
-def write(build_id, blessings, auras):
+def write(build_id, blessings, auras, oath):
     def fmt(lst):
         return ", ".join("{ %d, %d, %d }" % x for x in lst)
     lines = [
@@ -110,6 +117,9 @@ def write(build_id, blessings, auras):
     for a in auras:
         lines.append('    { key = "%s", ranks = { %s } }, -- %s' % (a["key"], fmt(a["ranks"]), a["name"]))
     lines.append("}")
+    if oath:
+        lines += ["", "-- Oath of Light (Holy talent): { spell ID, duration in seconds }.",
+                  "ns.OATH_OF_LIGHT = { %d, %d }" % oath]
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
@@ -121,12 +131,13 @@ def main():
     parser.add_argument("--data")
     args = parser.parse_args()
     build_id = args.build or latest_build()
-    blessings, auras = build({name: load(name, build_id, args.data) for name in TABLES})
-    write(build_id, blessings, auras)
+    blessings, auras, oath = build({name: load(name, build_id, args.data) for name in TABLES})
+    write(build_id, blessings, auras, oath)
     for b in blessings:
         print("%-10s %d single (%ds), %d greater (%ds), reagent %d" % (b["key"], len(b["single"]), b["single"][-1][2],
               len(b["greater"]), b["greater"][-1][2] if b["greater"] else 0, b["reagent"]))
     print("auras:", ", ".join(a["key"] for a in auras))
+    print("oath of light:", oath)
     print("wrote", OUT)
 
 

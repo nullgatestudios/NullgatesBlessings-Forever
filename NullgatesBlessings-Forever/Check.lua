@@ -93,5 +93,9 @@ function Check.Run()
     for id in pairs(lists or {}) do edited[#edited + 1] = id end
     table.sort(edited)
     Log(string.format("blessing lists from %s; edited: %s", tostring(source or "nobody (recommended)"), #edited > 0 and table.concat(edited, ",") or "none"))
+    local oath = ns.OATH_OF_LIGHT
+    local o = ns.Buttons.State() and ns.Buttons.State().oath
+    Log(string.format("Oath of Light: talent %s, target %s", tostring(oath and ns.Group.IsKnown(oath[1])), tostring(o and o.label or "none")))
+    if not ns.Plan.Blessing("salvation") then return end
     Log("Salvation test: put Salvation and another blessing of yours on one player, then run /nbless check again; if both show above, Salvation is separate from the blessing slot")
 end

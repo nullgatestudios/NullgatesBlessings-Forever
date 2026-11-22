@@ -113,7 +113,7 @@ end
 -- Blessings for a choice dropdown: every blessing, and "none".
 local function BlessingItems()
     local items = {}
-    for _, key in ipairs(ns.Engine.KEYS) do items[#items + 1] = { value = key, text = ns.PlanWindow.Short(key) } end
+    for _, key in ipairs(ns.Plan.Available()) do items[#items + 1] = { value = key, text = ns.PlanWindow.Short(key) } end
     items[#items + 1] = { value = false, text = L["none"] }
     return items
 end
@@ -141,12 +141,12 @@ end
 -- Blessing lists: pick a list, then a dropdown for each choice. Picking a blessing that's already in
 -- the list swaps the two. Edits are shared with the group; the leader's lists win.
 local function ListEditor(container, y)
-    local db, KEYS, IDS = ns.db, ns.Engine.KEYS, ns.Engine.LIST_IDS
+    local db, KEYS, IDS = ns.db, ns.Plan.Available(), ns.Engine.LIST_IDS
     local selected = IDS[1]
     local choices = {}
     local status = container:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
     local function Current()
-        local src, list = db.lists[selected] or ns.Engine.DEFAULT_LISTS[selected], {}
+        local src, list = ns.Plan.Available(db.lists[selected] or ns.Engine.DEFAULT_LISTS[selected]), {}
         for i = 1, #KEYS do list[i] = src[i] or false end
         return list
     end
@@ -170,7 +170,7 @@ local function ListEditor(container, y)
         choices[slot] = Dropdown(container, 110, y, 150, BlessingItems, function() return Current()[slot] end, function(key)
             local list = Current()
             Place(list, slot, key, #KEYS)
-            if table.concat(ns.Engine.CleanList(list), ",") == table.concat(ns.Engine.DEFAULT_LISTS[selected], ",") then
+            if table.concat(ns.Engine.CleanList(list), ",") == table.concat(ns.Plan.Available(ns.Engine.DEFAULT_LISTS[selected]), ",") then
                 db.lists[selected] = nil
             else
                 db.lists[selected] = list

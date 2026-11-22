@@ -10,7 +10,7 @@ ns.PlanWindow = PlanWindow
 local CELL_W, ROW_H, NAME_W, TOP = 62, 20, 96, 52
 local frame
 local cells, rowLabels, colLabels = {}, {}, {}
-local CYCLE = { nil, "might", "wisdom", "kings", "light", "salvation" }
+local CYCLE = { "might", "wisdom", "kings", "light", "salvation" }
 
 local SHORT
 local function Short(key)
@@ -20,10 +20,12 @@ end
 PlanWindow.Short = Short
 
 local function NextKey(key)
-    for i, k in ipairs(CYCLE) do
-        if k == key then return CYCLE[i % #CYCLE + 1] end
+    local cycle = { false }
+    for _, k in ipairs(ns.Plan.Available(CYCLE)) do cycle[#cycle + 1] = k end
+    for i, k in ipairs(cycle) do
+        if k == (key or false) then return cycle[i % #cycle + 1] or nil end
     end
-    return CYCLE[2]
+    return cycle[2]
 end
 PlanWindow.NextKey = NextKey
 

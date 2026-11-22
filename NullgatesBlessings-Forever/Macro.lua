@@ -1,5 +1,5 @@
 -- Nullgate's Blessings: the smart macro. One character macro ("NGBless") that casts the right
--- blessing on your friendly target, or tops up whoever in your plan needs it next when you have no
+-- blessing on your friendly target (your Oath of Light first on the tank, when it's running out), or tops up whoever in your plan needs it next when you have no
 -- friendly target. The game doesn't let secure code see who your target is in combat, so the macro is
 -- rewritten out of combat whenever your target, their blessings or the plan change; in combat it
 -- keeps what it had.
@@ -30,6 +30,8 @@ function Macro.SpellFor(unit, state)
     if not (UnitExists(unit) and UnitIsPlayer(unit) and UnitCanAssist("player", unit)) then return nil end
     local name, level = UnitName(unit), UnitLevel(unit) or 1
     if ns.Group.IsSecret(name) then return nil end
+    local oath = state and state.oath
+    if oath and oath.label == name and oath.remaining < ns.Plan.OATH_REFRESH then return ns.Plan.Spell(oath) end
     for _, col in ipairs(state and state.columns or {}) do
         for _, member in ipairs(col.members) do
             if member.name == name then
@@ -59,7 +61,7 @@ function Macro.Body(state)
     local clauses = {}
     local forTarget = Macro.CastName(Macro.SpellFor("target", state))
     if forTarget then clauses[#clauses + 1] = "[@target,help,nodead] " .. forTarget end
-    local next = state and ns.Plan.TopUp(state.targets, (ns.db.topUpMinutes or 10) * 60)
+    local next = state and ns.Plan.TopUp(state.targets, (ns.db.topUpMinutes or 10) * 60, state.oath)
     local topUp = next and next.units[1] and Macro.CastName(ns.Plan.Spell(next))
     if topUp then clauses[#clauses + 1] = "[@" .. next.units[1] .. "] " .. topUp end
     if #clauses == 0 then

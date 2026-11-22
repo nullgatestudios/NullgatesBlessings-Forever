@@ -2,6 +2,20 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.9] - 2026-11-21
+
+### New
+
+- **Oath of Light on the tank.** If you have the Oath of Light talent, the bar gets a row for it on the marked tank, with the time left. Top Up casts the Oath first when it's missing or has under a minute left, then goes back to blessings. The smart macro does the same, both on your target and for Top Up. If your Oath is already on one of the tanks, it stays there.
+
+### Changed
+
+- **Blessing of Light and Salvation are gone from Forever** (client 1.60.1.71037), so the addon no longer plans them or offers them in the settings and the plan window. Might, Wisdom and Kings work as before.
+
+### Good to know
+
+- The tank is whoever is marked tank: by role, the raid's Main Tank, Protection talents or your own marking. You never get your own Oath.
+
 ## [1.0.0-beta.8] - 2026-11-21
 
 ### New

@@ -230,6 +230,39 @@ Flush()
 OK(macros[1].body:find("[@target,help,nodead] " .. mightName, 1, true), "and catches up when combat ends")
 units.target, auras.target = nil, nil
 
+-- --- Oath of Light on the tank (Holy talent) --------------------------------------------------------
+local OATH = ns.OATH_OF_LIGHT[1]
+names[OATH] = "Oath of Light"
+units.party3.role = "TANK" -- the mage tanks, so the tank isn't us
+Fire("UNIT_AURA", "party3")
+Flush()
+OK(ns.Buttons.State().oath == nil and not ns.Buttons.oath.shown, "without the talent: no Oath of Light")
+known[OATH] = true
+Fire("UNIT_AURA", "party3")
+Flush()
+local oathRow = ns.Buttons.oath
+OK(oathRow.shown and oathRow.label.text == "Frosty" and oathRow.attributes.spell == OATH and oathRow.attributes.unit == "party3",
+    "with the talent: an Oath of Light row for the tank")
+OK(topUp.attributes.spell == OATH and topUp.attributes.unit == "party3", "Top Up does the Oath first")
+OK(macros[1].body:find("[@party3] Oath of Light", 1, true), "and so does the macro")
+units.target = units.party3
+Fire("PLAYER_TARGET_CHANGED")
+Flush()
+OK(macros[1].body:find("[@target,help,nodead] Oath of Light", 1, true), "targeting the tank: the Oath")
+table.insert(auras.party3, { "Oath of Light", now + 250, "player" })
+Fire("UNIT_AURA", "party3")
+Flush()
+OK(topUp.attributes.unit == "party4" and oathRow.timer.text == "4m" and not oathRow.glow.shown, "Oath on with 4 minutes: Top Up goes back to blessings")
+OK(not macros[1].body:find("Oath of Light", 1, true), "and the macro casts the tank's blessing")
+auras.party3[#auras.party3][2] = now + 30
+Fire("UNIT_AURA", "party3")
+Flush()
+OK(topUp.attributes.spell == OATH and oathRow.glow.shown, "under a minute left: the Oath again, in red")
+table.remove(auras.party3)
+units.party3.role, known[OATH], units.target = "DAMAGER", nil, nil
+Fire("UNIT_AURA", "party3")
+Flush()
+
 db.locked = true
 auras.party4[1][2] = now + 3000
 local onAura = ns.Plan.Aura(ns.Buttons.State().auras.Ironwall) -- your aura is on too
@@ -248,14 +281,14 @@ auras.party4[1][2] = now + 300
 -- --- Combat ------------------------------------------------------------------------------------
 inCombat = true
 local before = slot.Shiv.attributes.spell
-db.locks.Shiv = "salvation"
+db.locks.Shiv = "wisdom"
 Fire("UNIT_AURA", "party2")
 Flush()
 OK(slot.Shiv.attributes.spell == before and slot.Shiv.stale, "in combat the buttons don't change and are marked")
 inCombat = false
 Fire("PLAYER_REGEN_ENABLED")
 Flush()
-OK(ns.Buttons.State().plan.Ironwall.Shiv == "salvation", "after combat our lock on the rogue applies")
+OK(ns.Buttons.State().plan.Ironwall.Shiv == "wisdom", "after combat our lock on the rogue applies")
 OK(ns.Buttons.State().plan.Brightmend.Shiv == "might", "and the Holy paladin plans around it (Might)")
 db.locks.Shiv = nil
 
@@ -393,7 +426,7 @@ local listPicker, listAt
 for i, d in ipairs(dropdowns) do if Selected(d) == "Warrior: Arms and Fury" then listPicker, listAt = d, i end end
 OK(listPicker, "the list editor is a dropdown, starting on Warrior: Arms and Fury")
 local firstChoice, secondChoice = dropdowns[listAt + 1], dropdowns[listAt + 2]
-OK(Selected(firstChoice) == ns.PlanWindow.Short("might") and #Options(firstChoice) == 6, "choice 1 offers every blessing and none, with Might picked")
+OK(Selected(firstChoice) == ns.PlanWindow.Short("might") and #Options(firstChoice) == 4, "choice 1 offers the client's blessings (Might, Wisdom, Kings) and none, with Might picked")
 sent = {}
 OK(Pick(firstChoice, ns.PlanWindow.Short("kings")), "pick Kings for choice 1")
 Flush()
