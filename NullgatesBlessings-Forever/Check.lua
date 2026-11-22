@@ -70,16 +70,10 @@ function Check.Run()
     for _, m in ipairs(ns.Group.Members()) do
         local auras = {}
         for i = 1, 40 do
-            local name, caster
-            if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-                local a = C_UnitAuras.GetAuraDataByIndex(m.unit, i, "HELPFUL")
-                if not a then break end
-                name, caster = a.name, a.sourceUnit
-            else
-                local n, _, _, _, _, _, c = UnitBuff(m.unit, i)
-                if not n then break end
-                name, caster = n, c
-            end
+            local a = ns.Group.ReadAura(m.unit, i)
+            if a == nil then break end
+            if a == false then auras[#auras + 1] = "hidden by the game"; break end
+            local name, caster = a.name, a.sourceUnit
             if name and (name:find("Bless", 1, true) or name:find("Salvation", 1, true)) then
                 auras[#auras + 1] = name .. " from " .. tostring(caster and UnitName(caster))
             end

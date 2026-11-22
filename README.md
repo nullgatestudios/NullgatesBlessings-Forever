@@ -1,6 +1,6 @@
 # Nullgate's Blessings - Forever
 
-> **Status: beta** (1.0.0-beta.2). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
+> **Status: beta** (1.0.0-beta.3). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
 
 **Nullgate's Blessings** is a paladin addon for **World of Warcraft: Forever** that works out who should give which blessing to whom. It checks the blessings every player already has, skips any another paladin has already given, and moves to that player's next choice. Paladins running the addon reach the same plan automatically, with no chat needed.
 

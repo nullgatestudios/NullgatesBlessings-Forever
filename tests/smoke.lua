@@ -249,6 +249,26 @@ Fire("UNIT_AURA", "player")
 Flush()
 OK(Printed("Low on Symbol of Kings: 3 left."), "low on Symbol of Kings in a raid: a warning")
 
+-- --- Auras the game hides from addons (secret values, usually in combat) ------------------------------
+auras.raid1 = { { "Blessing of Kings", 4000, "player" }, { "Blessing of Wisdom", 0, "raid9" } }
+local firstRead = { ns.Group.Blessings("raid1", {}, 1000) }
+local hidden = false
+local realRead = C_UnitAuras.GetAuraDataByIndex
+C_UnitAuras.GetAuraDataByIndex = function(u, i)
+    if hidden then error("GetAuraDataByIndex(): Auras cannot be accessed when secret") end
+    return realRead(u, i)
+end
+C_Secrets = { ShouldUnitAuraIndexBeSecret = function() return hidden end }
+hidden = true
+local ok, taken, mine = pcall(ns.Group.Blessings, "raid1", {}, 1600)
+OK(ok, "hidden auras don't cause an error")
+OK(ok and taken.wisdom and mine.kings == firstRead[2].kings - 600, "hidden auras: the last full read is used, timers counted down")
+C_Secrets = nil
+ok, taken, mine = pcall(ns.Group.Blessings, "raid1", {}, 1600)
+OK(ok and taken.wisdom, "the refused read is caught even without the game's secret check")
+hidden = false
+C_UnitAuras.GetAuraDataByIndex = realRead
+
 -- --- Settings and /nbless check ---------------------------------------------------------------------
 SlashCmdList.NULLGATESBLESSINGS("config")
 OK(NullgatesBlessingsOptions and NullgatesBlessingsOptions.shown, "/nbless config opens the settings")

@@ -106,29 +106,54 @@ local function NameToKey()
     return nameToKey
 end
 
--- Forever can hide aura fields from addons (secret values, usually in combat); those can't be compared.
-local function Secret(...)
-    if not issecretvalue then return false end
-    for i = 1, select("#", ...) do if issecretvalue((select(i, ...))) then return true end end
-    return false
+-- Forever won't let addons read some auras (secret values, usually in combat): asking for one is an
+-- error, and hidden fields can't be compared. Returns the aura, nil past the last one, or false when
+-- the game is hiding it.
+local function IsSecret(v) return issecretvalue ~= nil and issecretvalue(v) == true end
+local function ReadAura(unit, i)
+    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+        local S = C_Secrets
+        if S and S.ShouldUnitAuraIndexBeSecret and S.ShouldUnitAuraIndexBeSecret(unit, i, "HELPFUL") then return false end
+        local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, unit, i, "HELPFUL")
+        if not ok then return false end
+        if a and (IsSecret(a.name) or IsSecret(a.expirationTime) or IsSecret(a.duration) or IsSecret(a.sourceUnit)
+            or IsSecret(a.spellId)) then return false end
+        return a
+    end
+    local name, _, _, _, duration, expires, caster, _, _, spellId = UnitBuff(unit, i)
+    if not name then return nil end
+    return { name = name, duration = duration, expirationTime = expires, sourceUnit = caster, spellId = spellId }
+end
+
+Group.ReadAura = ReadAura
+
+-- The last full read of each unit, used while the game hides its auras.
+local lastRead = {} -- [unit] = { name, at, taken, mine }
+
+local function LastRead(unit, now)
+    local last, name = lastRead[unit], UnitName(unit)
+    local taken, mine = {}, {}
+    if last and not IsSecret(name) and last.name == name then
+        for key in pairs(last.taken) do taken[key] = true end
+        for key, left in pairs(last.mine) do
+            left = left - (now - last.at)
+            if left > 0 then mine[key] = left end
+        end
+    end
+    return taken, mine
 end
 
 -- The blessings on a unit: taken = set of keys cast by paladins not in `addonNames`; mine =
--- [key] = seconds left on blessings you cast.
+-- [key] = seconds left on blessings you cast. While the game hides the unit's auras, the last full
+-- read is used.
 function Group.Blessings(unit, addonNames, now)
     local taken, mine, map, me = {}, {}, NameToKey(), Group.Me()
     for i = 1, 40 do
-        local name, expires, caster
-        if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-            local a = C_UnitAuras.GetAuraDataByIndex(unit, i, "HELPFUL")
-            if not a then break end
-            name, expires, caster = a.name, a.expirationTime, a.sourceUnit
-        else
-            local n, _, _, _, _, e, c = UnitBuff(unit, i)
-            if not n then break end
-            name, expires, caster = n, e, c
-        end
-        local key = name and not Secret(name, expires, caster) and map[name]
+        local a = ReadAura(unit, i)
+        if a == nil then break end
+        if a == false then return LastRead(unit, now) end
+        local name, expires, caster = a.name, a.expirationTime, a.sourceUnit
+        local key = name and map[name]
         if key then
             local casterName = caster and UnitName(caster)
             if casterName == me then
@@ -138,6 +163,8 @@ function Group.Blessings(unit, addonNames, now)
             end
         end
     end
+    local name = UnitName(unit)
+    lastRead[unit] = { name = not IsSecret(name) and name or nil, at = now, taken = taken, mine = mine }
     return taken, mine
 end
 
