@@ -13,29 +13,75 @@ ns.Engine = Engine
 
 Engine.KEYS = { "might", "wisdom", "kings", "light", "salvation" }
 
--- Wish lists, best first. Fixed (not per-player settings) so every copy of the addon agrees.
-local WISH = {
-    melee = { "might", "kings", "salvation", "light" },
-    caster = { "wisdom", "kings", "salvation", "light" },
-    hunter = { "kings", "wisdom", "salvation", "light" },
-    healer = { "wisdom", "kings", "salvation", "light" },
-    hybrid = { "kings", "wisdom", "might", "salvation", "light" },
-    hybridDamage = { "kings", "might", "wisdom", "salvation", "light" },
-    tankMelee = { "kings", "might", "light" },       -- never Salvation
-    tankPaladin = { "kings", "wisdom", "light" },
+-- Recommended wish lists, best first, by class and spec. A group can use the leader's edited lists
+-- instead (see Engine.Wishes); every copy of the addon then uses the same ones.
+local DEFAULT_LISTS = {
+    warriorDps   = { "might", "kings", "salvation", "light" },
+    warriorTank  = { "kings", "might", "light" },
+    rogue        = { "might", "kings", "salvation", "light" },
+    hunter       = { "kings", "wisdom", "salvation", "light" },
+    mage         = { "wisdom", "kings", "salvation", "light" },
+    warlock      = { "kings", "wisdom", "salvation", "light" },
+    priest       = { "wisdom", "kings", "salvation", "light" },
+    druidBalance = { "wisdom", "kings", "salvation", "light" },
+    druidCat     = { "kings", "might", "salvation", "light" },
+    druidBear    = { "kings", "might", "light" },
+    druidResto   = { "wisdom", "kings", "salvation", "light" },
+    shamanEle    = { "wisdom", "kings", "salvation", "light" },
+    shamanEnh    = { "might", "kings", "wisdom", "salvation" },
+    shamanResto  = { "wisdom", "kings", "salvation", "light" },
+    paladinHoly  = { "wisdom", "kings", "salvation", "light" },
+    paladinProt  = { "kings", "wisdom", "light" },
+    paladinRet   = { "might", "kings", "wisdom", "salvation" },
+    hybrid       = { "kings", "wisdom", "might", "salvation", "light" }, -- a druid, shaman or paladin whose spec isn't known yet
 }
-Engine.WISH = WISH
+Engine.DEFAULT_LISTS = DEFAULT_LISTS
+-- In the order the settings show them.
+Engine.LIST_IDS = { "warriorDps", "warriorTank", "rogue", "hunter", "mage", "warlock", "priest", "druidBalance", "druidCat",
+    "druidBear", "druidResto", "shamanEle", "shamanEnh", "shamanResto", "paladinHoly", "paladinProt", "paladinRet", "hybrid" }
 
--- A player's wish list from class, group role ("TANK", "HEALER", "DAMAGER" or "NONE") and whether
--- they're treated as a tank.
-function Engine.Wishes(class, role, tank)
-    if tank then return class == "PALADIN" and WISH.tankPaladin or WISH.tankMelee end
-    if class == "WARRIOR" or class == "ROGUE" then return WISH.melee end
-    if class == "MAGE" or class == "WARLOCK" or class == "PRIEST" then return WISH.caster end
-    if class == "HUNTER" then return WISH.hunter end
-    if role == "HEALER" then return WISH.healer end
-    if role == "DAMAGER" then return WISH.hybridDamage end
-    return WISH.hybrid -- PALADIN, DRUID, SHAMAN with no role
+local SPEC_LISTS = { -- talent tree (1, 2, 3) -> list
+    DRUID = { "druidBalance", "druidCat", "druidResto" },
+    SHAMAN = { "shamanEle", "shamanEnh", "shamanResto" },
+    PALADIN = { "paladinHoly", "paladinProt", "paladinRet" },
+}
+local HEALER_LISTS = { DRUID = "druidResto", SHAMAN = "shamanResto", PALADIN = "paladinHoly" }
+local SINGLE = { ROGUE = "rogue", HUNTER = "hunter", MAGE = "mage", WARLOCK = "warlock", PRIEST = "priest" }
+
+-- Which list a player uses: class, talent tree (nil when not known), group role ("TANK", "HEALER",
+-- "DAMAGER" or "NONE") and whether they're treated as a tank.
+function Engine.ListFor(class, spec, role, tank)
+    if class == "WARRIOR" then return tank and "warriorTank" or "warriorDps" end
+    if SINGLE[class] then return SINGLE[class] end
+    if tank then
+        if class == "DRUID" then return "druidBear" end
+        if class == "PALADIN" then return "paladinProt" end
+    end
+    local bySpec = SPEC_LISTS[class]
+    if bySpec and spec and bySpec[spec] then return bySpec[spec] end
+    if role == "HEALER" and HEALER_LISTS[class] then return HEALER_LISTS[class] end
+    return "hybrid"
+end
+
+-- A list without gaps or repeats (edited lists may have "none" slots, stored as false).
+function Engine.CleanList(list)
+    local out, seen = {}, {}
+    for i = 1, #Engine.KEYS do
+        local key = list and list[i]
+        if key and not seen[key] then out[#out + 1] = key; seen[key] = true end
+    end
+    return out
+end
+
+-- A player's wish list: the group's edited list for their spec if there is one, else the
+-- recommended one. Tanks never get Salvation.
+function Engine.Wishes(class, role, tank, spec, lists)
+    local id = Engine.ListFor(class, spec, role, tank)
+    local list = (lists and lists[id] and Engine.CleanList(lists[id])) or DEFAULT_LISTS[id]
+    if not tank then return list end
+    local out = {}
+    for _, key in ipairs(list) do if key ~= "salvation" then out[#out + 1] = key end end
+    return out
 end
 
 -- Default leanings by talent tree (1 Holy, 2 Protection, 3 Retribution).
@@ -112,10 +158,10 @@ function Engine.AssignPlayer(paladins, wish, taken, locked, current)
     return result
 end
 
--- The whole plan. paladins: as above (any order); players: { name, class, role, tank, taken = set,
--- current = [paladin] = key };
--- locks: [paladinName][playerName] = key. Returns plan[paladinName][playerName] = key.
-function Engine.Assign(paladins, players, locks)
+-- The whole plan. paladins: as above (any order); players: { name, class, role, tank, spec, taken = set,
+-- current = [paladin] = key }; locks: [paladinName][playerName] = key; lists: the group's edited
+-- lists ([listId] = list), or nil. Returns plan[paladinName][playerName] = key.
+function Engine.Assign(paladins, players, locks, lists)
     local sorted = {}
     for _, p in ipairs(paladins) do sorted[#sorted + 1] = p end
     table.sort(sorted, function(a, b) return a.name < b.name end)
@@ -127,7 +173,7 @@ function Engine.Assign(paladins, players, locks)
             local key = locks and locks[p.name] and locks[p.name][player.name]
             if key then locked[p.name] = key end
         end
-        local wish = Engine.Wishes(player.class, player.role, player.tank)
+        local wish = Engine.Wishes(player.class, player.role, player.tank, player.spec, lists)
         for name, key in pairs(Engine.AssignPlayer(sorted, wish, player.taken, locked, player.current)) do plan[name][player.name] = key end
     end
     return plan
@@ -231,4 +277,69 @@ function Engine.DecodeLeaderLocks(message)
         end
     end
     return locks
+end
+
+-- Specs learned by inspecting (or your own): "S;Bob:2,Ann:3", split to fit the 255-byte message limit.
+-- specs: [name] = tree. Returns a list of messages.
+local LIMIT = 240
+local function Pack(prefix, items)
+    local messages, current = {}, prefix
+    for _, item in ipairs(items) do
+        if #current > #prefix and #current + 1 + #item > LIMIT then
+            messages[#messages + 1] = current
+            current = prefix
+        end
+        current = current .. (#current > #prefix and "," or "") .. item
+    end
+    if #current > #prefix then messages[#messages + 1] = current end
+    return messages
+end
+
+function Engine.EncodeSpecs(specs)
+    local items = {}
+    for name, tree in pairs(specs or {}) do items[#items + 1] = name .. ":" .. tree end
+    table.sort(items)
+    return Pack("S;", items)
+end
+
+-- Returns [name] = tree, or nil for anything that isn't a spec message.
+function Engine.DecodeSpecs(message)
+    if type(message) ~= "string" or message:sub(1, 2) ~= "S;" then return nil end
+    local specs = {}
+    for _, item in ipairs(Split(message:sub(3))) do
+        local name, tree = item:match("^(.-):([123])$")
+        if name and name ~= "" then specs[name] = tonumber(tree) end
+    end
+    return specs
+end
+
+-- A paladin's edited lists: "W0;" (back to the recommended lists) followed by
+-- "W;rogue=might.kings,priest=wisdom.kings" with the edited ones. lists: [listId] = list.
+function Engine.EncodeLists(lists)
+    local items = {}
+    for _, id in ipairs(Engine.LIST_IDS) do
+        local list = lists and lists[id] and Engine.CleanList(lists[id])
+        if list then items[#items + 1] = id .. "=" .. table.concat(list, ".") end
+    end
+    local messages = { "W0;" }
+    for _, m in ipairs(Pack("W;", items)) do messages[#messages + 1] = m end
+    return messages
+end
+
+-- Returns "reset", or [listId] = list, or nil for anything else.
+function Engine.DecodeLists(message)
+    if message == "W0;" then return "reset" end
+    if type(message) ~= "string" or message:sub(1, 2) ~= "W;" then return nil end
+    local valid = {}
+    for _, k in ipairs(Engine.KEYS) do valid[k] = true end
+    local lists = {}
+    for _, item in ipairs(Split(message:sub(3))) do
+        local id, keys = item:match("^(%a+)=([%a.]*)$")
+        if id and DEFAULT_LISTS[id] then
+            local list = {}
+            for key in keys:gmatch("[^.]+") do if valid[key] then list[#list + 1] = key end end
+            lists[id] = list
+        end
+    end
+    return lists
 end

@@ -1,6 +1,6 @@
 # Nullgate's Blessings - Forever
 
-> **Status: beta** (1.0.0-beta.5). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
+> **Status: beta** (1.0.0-beta.6). Looking for paladins to test it, ideally groups with more than one. See [CHANGELOG.md](CHANGELOG.md).
 
 **Nullgate's Blessings** is a paladin addon for **World of Warcraft: Forever** that works out who should give which blessing to whom. It checks the blessings every player already has, skips any another paladin has already given, and moves to that player's next choice. Paladins running the addon reach the same plan automatically, with no chat needed.
 
@@ -8,7 +8,7 @@
 
 ## How It Works
 
-- **Every player has a wish list** by class and role: a rogue wants Might, then Kings, then Salvation; a mage wants Wisdom, then Kings.
+- **Every player has a wish list** by class and spec: a rogue wants Might, then Kings, then Salvation; a mage wants Wisdom, then Kings; a Feral druid Kings, then Might.
 - **Every paladin has leanings** suggested by their talents: Protection leans Might and Kings, Holy leans Wisdom and Kings. You can change your own.
 - **The addon reads what's already there.** If another paladin has given the rogue Might, your button for that rogue picks Kings instead. Paladins without the addon are handled from what they actually cast.
 - **No two paladins give the same blessing to the same player**, and nobody is given a blessing their paladins don't know.
@@ -24,7 +24,9 @@ Example: a Protection and a Holy paladin in a dungeon. The rogue gets Might from
 - **A compact list**: one row per party member with the blessing, their name, a bar for the time left on yours and the timer. Hides while every blessing is fresh.
 - **Top Up** row that refreshes every blessing of yours with under 10 minutes left, one per press, before a pull.
 - **Greater Blessings** in raids, one row per class.
-- **Tank detection** from role selection and the raid's Main Tank, with your own marking on top. Tanks never get Salvation.
+- **Lists by spec**: a Feral druid gets Kings and Might, a Balance druid Wisdom and Kings, an Enhancement shaman Might first. The addon learns specs by inspecting nearby group members out of combat and shares them with the other paladins; until a spec is known, the group role is used.
+- **Edit the lists**: change the order for any class or spec in the settings. In a group, the leader's lists are used, so every paladin plans the same way.
+- **Tank detection** from role selection, the raid's Main Tank and Protection talents, with your own marking on top. Tanks never get Salvation.
 - **Locks**: "Bob always gets Salvation from me", or leader locks for the whole group.
 - **Aura assignments**, an optional announcement to group chat, and a Symbol of Kings warning.
 - **Settings** in its own window or inside Nullgate's Addon Config.

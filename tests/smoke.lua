@@ -148,7 +148,15 @@ local holyHello = ns.Engine.EncodeHello({ known = { might = true, wisdom = true,
 sent = {}
 Fire("CHAT_MSG_ADDON", "NGBless", holyHello, "PARTY", "Brightmend-Realm")
 Flush()
-OK(#sent == 1, "a newcomer gets our hello back")
+local hellos, specMsg, listMsg = 0, nil, nil
+for _, m in ipairs(sent) do
+    if m.msg:find("^H;") then hellos = hellos + 1 end
+    if m.msg:find("^S;") then specMsg = m.msg end
+    if m.msg == "W0;" then listMsg = true end
+end
+OK(hellos == 1, "a newcomer gets our hello back")
+OK(specMsg and ns.Engine.DecodeSpecs(specMsg).Ironwall == 2, "with our spec (Protection)")
+OK(listMsg, "and our blessing lists (the recommended ones)")
 local state = ns.Buttons.State()
 local function Mine(name) return state.plan.Ironwall[name] end
 local function Theirs(name) return state.plan.Brightmend[name] end
@@ -226,7 +234,17 @@ leader = "Brightmend"
 Fire("CHAT_MSG_ADDON", "NGBless", ls, "PARTY", "Brightmend")
 Flush()
 OK(ns.Buttons.State().plan.Brightmend.Shiv == "light", "from the leader they apply")
+
+-- --- The leader's blessing lists ----------------------------------------------------------------
+for _, m in ipairs(ns.Engine.EncodeLists({ mage = { "light", "kings" } })) do Fire("CHAT_MSG_ADDON", "NGBless", m, "PARTY", "Brightmend") end
+Flush()
+state = ns.Buttons.State()
+OK(state.listSource == "Brightmend", "the leader's lists are used")
+OK(state.plan.Ironwall.Frosty == "light" or state.plan.Brightmend.Frosty == "light", "the leader's mage list (Light first) applies")
+Fire("CHAT_MSG_ADDON", "NGBless", "W0;", "PARTY", "Brightmend")
 leader = "Ironwall"
+Flush()
+OK(ns.Buttons.State().listSource == "Ironwall", "back to our own lists once we lead")
 
 -- --- Plan window and announce -------------------------------------------------------------------
 SlashCmdList.NULLGATESBLESSINGS("")
@@ -277,6 +295,31 @@ Flush()
 OK(not ns.Buttons.aura.shown, "aura on: no aura button")
 formOn = false
 
+-- --- Learning a spec by inspecting --------------------------------------------------------------------
+units.party4.class = "DRUID"
+local asked
+function IsInGroup() return true end
+function CanInspect() return true end
+function CheckInteractDistance() return true end
+function UnitGUID(u) return "guid-" .. tostring(UnitName(u)) end
+function NotifyInspect(u) asked = u end
+local realTalents = GetTalentTabInfo
+function GetTalentTabInfo(tab, inspect) if inspect then return "Tab", "icon", tab == 3 and 31 or 0 end return realTalents(tab) end
+sent = {}
+ns.Inspect.Tick()
+OK(asked and UnitName(asked) == "Arrow", "the druid is inspected (not the paladin running the addon)")
+Fire("INSPECT_READY", "guid-Arrow")
+Flush()
+OK(ns.Group.Spec("Arrow") == 3, "the druid's spec is learned: Restoration")
+local shared
+for _, m in ipairs(sent) do if m.msg:find("^S;") then shared = ns.Engine.DecodeSpecs(m.msg) end end
+OK(shared and shared.Arrow == 3, "and shared with the other paladins")
+asked = nil
+ns.Inspect.Tick()
+OK(asked == nil, "nobody left to inspect")
+units.party4.class = "HUNTER"
+GetTalentTabInfo = realTalents
+
 -- --- Auras the game hides from addons (secret values, usually in combat) ------------------------------
 auras.raid1 = { { "Blessing of Kings", 4000, "player" }, { "Blessing of Wisdom", 0, "raid9" } }
 local firstRead = { ns.Group.Blessings("raid1", {}, 1000) }
@@ -300,6 +343,20 @@ C_UnitAuras.GetAuraDataByIndex = realRead
 -- --- Settings and /nbless check ---------------------------------------------------------------------
 SlashCmdList.NULLGATESBLESSINGS("config")
 OK(NullgatesBlessingsOptions and NullgatesBlessingsOptions.shown, "/nbless config opens the settings")
+local listAt
+for i, f in ipairs(frames) do if f.text and tostring(f.text):find("^List: ") then listAt = i end end
+OK(listAt and frames[listAt].text == "List: Warrior: Arms and Fury", "the list editor starts on Warrior: Arms and Fury")
+local firstChoice
+for i = listAt, #frames do if frames[i].text and tostring(frames[i].text):find("^Choice 1: ") then firstChoice = frames[i]; break end end
+sent = {}
+firstChoice.scripts.OnClick(firstChoice)
+Flush()
+OK(db.lists.warriorDps and db.lists.warriorDps[1] == "wisdom", "clicking a choice changes it (Might to Wisdom, skipping ones already in the list)")
+local shared
+for _, m in ipairs(sent) do local l = ns.Engine.DecodeLists(m.msg); if type(l) == "table" and l.warriorDps then shared = l.warriorDps end end
+OK(shared and shared[1] == "wisdom", "the edited list is shared with the group")
+frames[listAt].scripts.OnClick(frames[listAt], "RightButton")
+OK(frames[listAt].text:find("spec not known", 1, true), "right-click goes back (to the last list)")
 SlashCmdList.NULLGATESBLESSINGS("check")
 local log = table.concat(db.check or {}, "\n")
 OK(log:find("C_ChatInfo.SendAddonMessage=yes", 1, true), "check reports which calls exist")

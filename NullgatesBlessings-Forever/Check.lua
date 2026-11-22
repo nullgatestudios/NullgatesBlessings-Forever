@@ -50,7 +50,8 @@ function Check.Run()
         tostring(ns.BLESSING_DATA_BUILD)))
     local calls = {}
     for _, name in ipairs({ "C_UnitAuras.GetAuraDataByIndex", "UnitBuff", "UnitGroupRolesAssigned", "GetPartyAssignment",
-        "C_ChatInfo.SendAddonMessage", "C_ChatInfo.RegisterAddonMessagePrefix", "GetTalentTabInfo", "UnitIsGroupAssistant" }) do
+        "C_ChatInfo.SendAddonMessage", "C_ChatInfo.RegisterAddonMessagePrefix", "GetTalentTabInfo", "UnitIsGroupAssistant",
+        "NotifyInspect", "CanInspect", "CheckInteractDistance", "ClearInspectPlayer" }) do
         calls[#calls + 1] = name .. "=" .. (Exists(name) and "yes" or "no")
     end
     Log("calls: " .. table.concat(calls, " "))
@@ -79,12 +80,18 @@ function Check.Run()
             end
         end
         local taken, mine = ns.Group.Blessings(m.unit, {}, now)
-        Log(string.format("%s (%s %s): role %s, main tank %s, tank %s | %s | taken %s, yours %s", tostring(m.name), tostring(m.class),
-            tostring(m.unit), tostring(m.role), tostring(m.mainTank), tostring(ns.Group.IsTank(m, tanks, notTanks)),
-            #auras > 0 and table.concat(auras, "; ") or "no blessings", Keys(taken), Keys(mine)))
+        local tank = ns.Group.IsTank(m, tanks, notTanks)
+        Log(string.format("%s (%s %s): role %s, spec %s, main tank %s, tank %s, list %s | %s | taken %s, yours %s", tostring(m.name),
+            tostring(m.class), tostring(m.unit), tostring(m.role), tostring(m.spec), tostring(m.mainTank), tostring(tank),
+            ns.Engine.ListFor(m.class, m.spec, m.role, tank), #auras > 0 and table.concat(auras, "; ") or "no blessings", Keys(taken), Keys(mine)))
     end
     local peers = {}
     for name, p in pairs(ns.Group.peers) do peers[#peers + 1] = name .. " (" .. Keys(p.known) .. ")" end
     Log("paladins heard from: " .. (#peers > 0 and table.concat(peers, ", ") or "none"))
+    local source, lists = ns.Group.ListSource(ns.Group.Members())
+    local edited = {}
+    for id in pairs(lists or {}) do edited[#edited + 1] = id end
+    table.sort(edited)
+    Log(string.format("blessing lists from %s; edited: %s", tostring(source or "nobody (recommended)"), #edited > 0 and table.concat(edited, ",") or "none"))
     Log("Salvation test: put Salvation and another blessing of yours on one player, then run /nbless check again; if both show above, Salvation is separate from the blessing slot")
 end

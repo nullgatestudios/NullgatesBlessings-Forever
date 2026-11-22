@@ -63,13 +63,14 @@ function Plan.Build()
         end
     else
         for _, m in ipairs(members) do
-            players[#players + 1] = { name = m.name, class = m.class, role = m.role, tank = info[m.name].tank, taken = info[m.name].taken,
+            players[#players + 1] = { name = m.name, class = m.class, role = m.role, spec = m.spec, tank = info[m.name].tank, taken = info[m.name].taken,
                                       current = info[m.name].current }
             columns[#columns + 1] = { name = m.name, class = m.class, members = { m } }
         end
     end
 
-    local plan = ns.Engine.Assign(paladins, players, ns.Group.Locks())
+    local listSource, lists = ns.Group.ListSource(members)
+    local plan = ns.Engine.Assign(paladins, players, ns.Group.Locks(), lists)
     local auras = ns.Engine.AssignAuras(paladins)
     local mine = plan[ns.Group.Me()] or {}
     local targets = {}
@@ -87,7 +88,7 @@ function Plan.Build()
         end
     end
     return { mode = raid and "raid" or "party", plan = plan, paladins = paladins, columns = columns, targets = targets,
-             auras = auras, info = info }
+             auras = auras, info = info, listSource = listSource }
 end
 
 function Plan.Blessing(key)

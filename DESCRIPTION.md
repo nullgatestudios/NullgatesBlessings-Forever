@@ -8,13 +8,15 @@ When two or more paladins run the addon, they all reach the same plan automatica
 
 ## Features
 
-- **Smart assignments**: every player has a wish list by class and role, every paladin has leanings based on their talents, and the addon picks the best combination so nobody gets the same blessing twice.
+- **Smart assignments**: every player has a recommended list of blessings for their class and spec, best first, every paladin has leanings based on their talents, and the addon picks the best combination so nobody gets the same blessing twice.
 - **Reads what's already there**: if another paladin has given the rogue Might, your button for that rogue picks Kings instead. This works even when the other paladin doesn't use the addon.
 - **Keeps what you've already given**: a blessing you or another paladin running the addon already has on a player stays as it is, unless it clashes with someone else's or a lock says otherwise.
 - **A compact list**: one row per party member with the blessing it will cast, their name, a bar for the time left on yours and the timer. Click a row to cast. The list hides while every blessing is fresh.
 - **Top Up**: refreshes every blessing of yours with less than 10 minutes left, one per press, so nothing drops in the middle of a fight.
 - **Greater Blessings in raids**: one row per class.
-- **Tank detection** from role selection and the raid's Main Tank, with your own marking on top. Tanks never get Salvation.
+- **Lists by spec**: a Feral druid gets Kings and Might, a Balance druid Wisdom and Kings, an Enhancement shaman Might first. The addon learns specs by inspecting nearby group members out of combat and shares them with the other paladins; until a spec is known, the group role is used.
+- **Edit the lists**: change the order for any class or spec in the settings. In a group, the leader's lists are used, so every paladin plans the same way.
+- **Tank detection** from role selection, the raid's Main Tank and Protection talents, with your own marking on top. Tanks never get Salvation.
 - **Locks**: "Bob always gets Salvation from me", or leader locks for the whole group. Everyone else plans around them.
 - **Aura assignments**, an optional announcement to group chat, and a warning when your Symbol of Kings run low.
 - **Key bindings** under Key Bindings > AddOns.

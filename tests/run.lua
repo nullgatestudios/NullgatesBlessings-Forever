@@ -60,6 +60,26 @@ for _, p in ipairs(players) do
     EQ(again.Ironwall[p.name] .. "/" .. again.Brightmend[p.name], Pair(p.name), "same plan in any order: " .. p.name)
 end
 
+-- --- Lists by class and spec -----------------------------------------------------------------------
+local function W(...) return table.concat(E.Wishes(...), ",") end
+EQ(W("ROGUE", "DAMAGER", false), "might,kings,salvation,light", "rogue: Might, Kings, Salvation, Light")
+EQ(W("PRIEST", "HEALER", false), "wisdom,kings,salvation,light", "priest: Wisdom first")
+EQ(W("DRUID", "NONE", false, 1), "wisdom,kings,salvation,light", "Balance druid (from talents)")
+EQ(W("DRUID", "NONE", false, 2), "kings,might,salvation,light", "Feral druid in cat form")
+EQ(W("DRUID", "TANK", true, 2), "kings,might,light", "Feral druid tanking: bear list")
+EQ(W("SHAMAN", "NONE", false, 2), "might,kings,wisdom,salvation", "Enhancement shaman")
+EQ(W("SHAMAN", "HEALER", false), "wisdom,kings,salvation,light", "spec not known, healer role: Restoration")
+EQ(W("PALADIN", "NONE", false), "kings,wisdom,might,salvation,light", "spec not known, no role: the hybrid list")
+EQ(W("WARRIOR", "DAMAGER", true), "kings,might,light", "a warrior tank")
+local edited = { rogue = { "kings", false, "might", "kings" } }
+EQ(W("ROGUE", "DAMAGER", false, nil, edited), "kings,might", "an edited list: gaps and repeats dropped")
+EQ(W("ROGUE", "DAMAGER", true, nil, { rogue = { "salvation", "kings" } }), "kings", "tanks never get Salvation, even from an edited list")
+-- Top choice already given by someone else: the next one.
+plan = E.Assign({ prot }, { { name = "Shiv", class = "ROGUE", taken = Set("might") } }, {}, edited)
+EQ(plan.Ironwall.Shiv, "kings", "edited rogue list, Kings first")
+plan = E.Assign({ prot }, { { name = "Shiv", class = "ROGUE", taken = Set("kings") } }, {}, edited)
+EQ(plan.Ironwall.Shiv, "might", "Kings already there: the rogue's next choice, Might")
+
 -- --- Blessings already given are kept ------------------------------------------------------------
 -- A tester's case: Herald put Might on themself and a friend gave them Wisdom; it asked for Kings.
 local herald = { name = "Herald", known = ALL, lean = E.DefaultLean(3) }

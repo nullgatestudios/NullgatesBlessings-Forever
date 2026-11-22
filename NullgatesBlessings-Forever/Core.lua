@@ -11,6 +11,7 @@ ns.DEFAULTS = {
     lean = nil,                         -- your blessing leanings (nil = from your talents)
     auraLean = { "devotion", "retribution", "concentration" },
     locks = {},                         -- [player or class] = key: your own locks
+    lists = {},                         -- [listId] = list: your edits to the recommended blessing lists
     tanks = {},                         -- [name] = true (tank) or false (not a tank): your hand marks
     warnMinutes = 5,                    -- red when your blessing is missing or under this
     topUpMinutes = 10,                  -- Top Up refreshes blessings under this
@@ -129,6 +130,7 @@ events:SetScript("OnEvent", function(_, event, ...)
         if active then
             ns.Buttons.Create()
             C_Timer.NewTicker(5, ns.Buttons.UpdateTimers)
+            C_Timer.NewTicker(3, ns.Inspect.Tick)
         end
         ns.Group.Hello()
     elseif event == "PLAYER_REGEN_ENABLED" then
@@ -146,6 +148,8 @@ events:SetScript("OnEvent", function(_, event, ...)
         return
     elseif event == "UNIT_AURA" then
         if arg1 == "player" or (arg1 and (arg1:match("^party%d") or arg1:match("^raid%d"))) then ns.Refresh() end
+    elseif event == "INSPECT_READY" then
+        ns.Inspect.OnReady(arg1)
     elseif event == "UPDATE_SHAPESHIFT_FORM" or event == "UPDATE_SHAPESHIFT_FORMS" then
         ns.Refresh() -- an aura turned on or off
     else -- spells or talents changed
@@ -154,7 +158,7 @@ events:SetScript("OnEvent", function(_, event, ...)
     end
 end)
 for _, event in ipairs({ "ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_ENABLED", "CHAT_MSG_ADDON", "GROUP_ROSTER_UPDATE",
-    "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS" }) do
+    "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS", "INSPECT_READY" }) do
     events:RegisterEvent(event)
 end
 

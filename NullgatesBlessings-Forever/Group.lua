@@ -8,7 +8,9 @@ ns.Group = Group
 Group.PREFIX = "NGBless"
 local peers = {}        -- [name] = hello info from other paladins running the addon
 local leaderLocks = {}  -- [paladin][player] = key, from the group leader or an assistant
-Group.peers = peers
+local specs = {}        -- [name] = { tree, at }: talent trees learned by inspecting, yours or shared
+local peerLists = {}    -- [name] = edited blessing lists from a paladin or leader running the addon
+Group.peers, Group.specs, Group.peerLists = peers, specs, peerLists
 
 function Group.SpellName(spellID)
     if not spellID then return nil end
@@ -25,17 +27,35 @@ function Group.Me()
     return UnitName("player")
 end
 
--- The talent tree with the most points (1 Holy, 2 Protection, 3 Retribution), or nil.
-function Group.MyTree()
+-- The talent tree with the most points (1, 2 or 3; for a paladin 1 Holy, 2 Protection, 3
+-- Retribution), or nil: yours, or the inspected player's when `inspect` is true.
+function Group.Tree(inspect)
     if not GetTalentTabInfo then return nil end
     local best, bestPoints = nil, 0
     for tab = 1, 3 do
         -- Classic returns (name, icon, pointsSpent, ...); newer clients return pointsSpent fifth.
-        local _, _, third, _, fifth = GetTalentTabInfo(tab)
-        local points = (type(third) == "number" and third) or (type(fifth) == "number" and fifth) or 0
+        local _, _, third, _, fifth = GetTalentTabInfo(tab, inspect)
+        local points = (type(third) == "number" and not Group.IsSecret(third) and third)
+            or (type(fifth) == "number" and not Group.IsSecret(fifth) and fifth) or 0
         if points > bestPoints then best, bestPoints = tab, points end
     end
     return best
+end
+
+function Group.MyTree() return Group.Tree(false) end
+
+-- A player's talent tree, or nil when it isn't known.
+function Group.Spec(name)
+    if name == Group.Me() then return Group.MyTree() end
+    return specs[name] and specs[name].tree
+end
+
+-- Records a learned tree; returns true when it's new or changed.
+function Group.SetSpec(name, tree, now)
+    if not (name and tree) then return false end
+    local old = specs[name]
+    specs[name] = { tree = tree, at = now or 0 }
+    return not old or old.tree ~= tree
 end
 
 -- --- Members -------------------------------------------------------------------------
@@ -53,8 +73,10 @@ function Group.Members()
             if not secret and checked and not inRange then reachable = false end
         end
         local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit) or "NONE"
-        list[#list + 1] = { unit = unit, name = UnitName(unit), class = class, level = UnitLevel(unit), group = group,
-                            role = role, reachable = reachable,
+        if Group.IsSecret(role) then role = "NONE" end
+        local name = UnitName(unit)
+        list[#list + 1] = { unit = unit, name = name, class = class, level = UnitLevel(unit), group = group,
+                            role = role, reachable = reachable, spec = Group.Spec(name),
                             mainTank = GetPartyAssignment and GetPartyAssignment("MAINTANK", unit) or false }
     end
     if IsInRaid() then
@@ -85,11 +107,13 @@ function Group.TankMarks()
     return tanks, notTanks
 end
 
--- Hand marks win; then the group role, the raid's Main Tank, and (for you) a Protection talent guess.
+-- Hand marks win; then the group role, the raid's Main Tank, and a Protection warrior or paladin
+-- (from their talents).
 function Group.IsTank(member, tanks, notTanks)
     if notTanks[member.name] then return false end
     if tanks[member.name] then return true end
-    return member.role == "TANK" or member.mainTank == true
+    if member.role == "TANK" or member.mainTank == true then return true end
+    return (member.class == "WARRIOR" and member.spec == 3) or (member.class == "PALADIN" and member.spec == 2) or false
 end
 
 -- --- Blessings on a unit ------------------------------------------------------------------
@@ -110,6 +134,7 @@ end
 -- error, and hidden fields can't be compared. Returns the aura, nil past the last one, or false when
 -- the game is hiding it.
 local function IsSecret(v) return issecretvalue ~= nil and issecretvalue(v) == true end
+Group.IsSecret = IsSecret
 local function ReadAura(unit, i)
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
         local S = C_Secrets
@@ -232,6 +257,31 @@ function Group.LeaderLocks()
     return leaderLocks
 end
 
+-- The group leader's name, or nil.
+local function Leader(members)
+    for _, m in ipairs(members) do
+        if m.unit and UnitIsGroupLeader and UnitIsGroupLeader(m.unit) then return m.name end
+    end
+end
+
+-- Whose edited blessing lists the group uses: the leader's when they run the addon, else the first
+-- paladin running it (by name). Returns their name and lists (nil for the recommended ones).
+function Group.ListSource(members)
+    local me = Group.Me()
+    local leader = Leader(members)
+    local source
+    if leader and (leader == me or peerLists[leader]) then
+        source = leader
+    else
+        for _, p in ipairs(Group.Paladins(members)) do
+            if not source or p.name < source then source = p.name end
+        end
+    end
+    if not source then return nil, nil end
+    local lists = source == me and ns.db.lists or peerLists[source]
+    return source, (lists and next(lists)) and lists or nil
+end
+
 -- --- Messages ----------------------------------------------------------------------------
 
 local function Channel()
@@ -246,6 +296,15 @@ function Group.Send(message)
     end
 end
 
+-- Specs to share: yours and every one learned in the group.
+function Group.KnownSpecs()
+    local list = {}
+    for name, info in pairs(specs) do list[name] = info.tree end
+    local mine = Group.MyTree()
+    if mine then list[Group.Me()] = mine end
+    return list
+end
+
 local helloQueued = false
 function Group.Hello()
     if helloQueued then return end
@@ -253,8 +312,18 @@ function Group.Hello()
     C_Timer.After(2, function()
         helloQueued = false
         local _, class = UnitClass("player")
+        local leading = UnitIsGroupLeader and UnitIsGroupLeader("player")
         if class == "PALADIN" or next(ns.db.tanks) then Group.Send(ns.Engine.EncodeHello(Group.MyInfo())) end
+        if class == "PALADIN" or leading then
+            for _, m in ipairs(ns.Engine.EncodeLists(ns.db.lists)) do Group.Send(m) end
+        end
+        for _, m in ipairs(ns.Engine.EncodeSpecs(Group.KnownSpecs())) do Group.Send(m) end
     end)
+end
+
+-- Shares one spec just learned.
+function Group.SendSpec(name, tree)
+    for _, m in ipairs(ns.Engine.EncodeSpecs({ [name] = tree })) do Group.Send(m) end
 end
 
 function Group.CanLead(name)
@@ -284,6 +353,24 @@ function Group.OnMessage(prefix, message, _, sender)
         leaderLocks = locks
         return true
     end
+    local learned = ns.Engine.DecodeSpecs(message)
+    if learned then
+        local changed = false
+        local now = GetTime and GetTime() or 0
+        for player, tree in pairs(learned) do
+            if player ~= Group.Me() and Group.SetSpec(player, tree, now) then changed = true end
+        end
+        return changed
+    end
+    local lists = ns.Engine.DecodeLists(message)
+    if lists == "reset" then
+        peerLists[name] = {}
+        return true
+    elseif lists then
+        peerLists[name] = peerLists[name] or {}
+        for id, list in pairs(lists) do peerLists[name][id] = list end
+        return true
+    end
     return false
 end
 
@@ -292,4 +379,6 @@ function Group.Prune(members)
     local present = {}
     for _, m in ipairs(members) do present[m.name] = true end
     for name in pairs(peers) do if not present[name] then peers[name] = nil end end
+    for name in pairs(peerLists) do if not present[name] then peerLists[name] = nil end end
+    for name in pairs(specs) do if not present[name] then specs[name] = nil end end
 end

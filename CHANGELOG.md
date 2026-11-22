@@ -2,6 +2,20 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.6] - 2026-11-21
+
+### New
+
+- **Blessing lists by spec.** Every class and spec has a recommended list, best first. For example, a rogue gets Might, Kings, Salvation, Light; a priest Wisdom, Kings, Salvation, Light; a Feral druid Kings, Might, Salvation, Light; and an Enhancement shaman Might, Kings, Wisdom, Salvation. When a player already has their first choice from someone else, they get their next one, and Top Up casts that.
+- **Specs are learned by inspecting.** Out of combat, the addon inspects one nearby warrior, druid, shaman or paladin at a time, and shares what it learns with the other paladins running the addon. Until a player's spec is known, their group role is used.
+- **Edit the lists** in the settings under Blessing lists: pick a list, then click each choice to change it. Right-click the list name to go back. In a group, the leader's lists are used, or the first paladin's by name, so every paladin plans the same way.
+- Protection warriors and paladins are treated as tanks once their spec is known.
+
+### Good to know
+
+- The addon doesn't inspect while you have the inspect window open, and never in combat.
+- `/nbless check` now shows each player's spec and list, and whose lists the group is using.
+
 ## [1.0.0-beta.5] - 2026-11-21
 
 ### Changed

@@ -73,6 +73,94 @@ local function Button(parent, text, x, y, width, onClick)
     return button
 end
 
+-- The settings name of each blessing list (looked up when shown, so the chosen language applies).
+local function ListName(id)
+    local names = {
+        warriorDps = L["Warrior: Arms and Fury"], warriorTank = L["Warrior: Protection"], rogue = L["Rogue"],
+        hunter = L["Hunter"], mage = L["Mage"], warlock = L["Warlock"], priest = L["Priest"],
+        druidBalance = L["Druid: Balance"], druidCat = L["Druid: Feral (cat)"], druidBear = L["Druid: Feral (bear)"],
+        druidResto = L["Druid: Restoration"], shamanEle = L["Shaman: Elemental"], shamanEnh = L["Shaman: Enhancement"],
+        shamanResto = L["Shaman: Restoration"], paladinHoly = L["Paladin: Holy"], paladinProt = L["Paladin: Protection"],
+        paladinRet = L["Paladin: Retribution"], hybrid = L["Druid, shaman or paladin, spec not known yet"],
+    }
+    return names[id] or id
+end
+
+-- Blessing lists: pick a list (right-click goes back), then each choice cycles through the blessings
+-- not already in the list, and "none". Edits are shared with the group; the leader's lists win.
+local function ListEditor(container, y)
+    local db, KEYS, IDS = ns.db, ns.Engine.KEYS, ns.Engine.LIST_IDS
+    local selected = 1
+    local picker = Button(container, "", 16, y, 330, nil)
+    picker:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    y = y - 26
+    local slots = {}
+    local function Current()
+        local id = IDS[selected]
+        local src, list = db.lists[id] or ns.Engine.DEFAULT_LISTS[id], {}
+        for i = 1, #KEYS do list[i] = src[i] or false end
+        return id, list
+    end
+    local status = container:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    local function Draw()
+        picker:SetText(string.format(L["List: %s"], ListName(IDS[selected])))
+        local _, list = Current()
+        for slot, button in ipairs(slots) do
+            local key = list[slot]
+            button:SetText(string.format(L["Choice %d: %s"], slot, key and ns.PlanWindow.Short(key) or L["none"]))
+        end
+        local state = ns.Buttons.State()
+        local source = state and state.listSource
+        status:SetText(source and source ~= ns.Group.Me() and string.format(L["The group is using %s's lists."], source) or "")
+    end
+    local function Save(id, list)
+        local clean = ns.Engine.CleanList(list)
+        if table.concat(clean, ",") == table.concat(ns.Engine.DEFAULT_LISTS[id], ",") then db.lists[id] = nil
+        else db.lists[id] = list end
+        ns.Group.Hello()
+        Apply()
+    end
+    picker:SetScript("OnClick", function(_, mouse)
+        selected = (mouse == "RightButton") and ((selected - 2) % #IDS + 1) or (selected % #IDS + 1)
+        Draw()
+    end)
+    for slot = 1, #KEYS do
+        local button = Button(container, "", 16, y, 230, nil)
+        button:SetScript("OnClick", function()
+            local id, list = Current()
+            local used, options = {}, {}
+            for i = 1, #KEYS do if i ~= slot and list[i] then used[list[i]] = true end end
+            for _, key in ipairs(KEYS) do if not used[key] then options[#options + 1] = key end end
+            options[#options + 1] = false
+            local at = #options
+            for i = 1, #options do if options[i] == list[slot] then at = i end end
+            list[slot] = options[at % #options + 1]
+            Save(id, list)
+            Draw()
+        end)
+        slots[slot] = button
+        y = y - 24
+    end
+    Button(container, L["Reset to recommended"], 16, y - 2, 180, function()
+        for id in pairs(db.lists) do db.lists[id] = nil end
+        ns.Group.Hello()
+        Apply()
+        Draw()
+    end)
+    y = y - 30
+    status:SetPoint("TOPLEFT", container, "TOPLEFT", 16, y)
+    status:SetWidth(330)
+    status:SetJustifyH("LEFT")
+    y = y - 14
+    local note = container:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    note:SetPoint("TOPLEFT", container, "TOPLEFT", 16, y)
+    note:SetWidth(330)
+    note:SetJustifyH("LEFT")
+    note:SetText(L["Best first. In a group, the leader's lists are used, or the first paladin's by name. Tanks never get Salvation."])
+    Draw()
+    return y - 36
+end
+
 -- Lays out every setting inside container; returns the height used.
 function Options.Build(container)
     local db = ns.db
@@ -109,6 +197,9 @@ function Options.Build(container)
         y = y - 26
     end
     y = y - 6
+
+    y = Header(container, L["Blessing lists"], y)
+    y = ListEditor(container, y)
 
     y = Header(container, L["Warnings"], y)
     y = Stepper(container, L["Red when under (minutes)"], function() return db.warnMinutes end, function(v) db.warnMinutes = v end, 1, 30, 1, "%d", y)
