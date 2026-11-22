@@ -2,6 +2,12 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.7] - 2026-11-21
+
+### Changed
+
+- **Dropdowns in the settings.** The blessing list, each choice in it, your leanings and the language are now picked from dropdowns instead of clicking through every option. Picking a blessing that's already in the list swaps the two.
+
 ## [1.0.0-beta.6] - 2026-11-21
 
 ### New

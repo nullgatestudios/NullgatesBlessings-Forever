@@ -73,6 +73,58 @@ local function Button(parent, text, x, y, width, onClick)
     return button
 end
 
+-- A dropdown (the game's own; a button that cycles through the options on clients without one).
+-- items() returns { { value =, text = } }; get() returns the selected value; set(value) changes it.
+-- Returns an object with :Refresh() for when the value changes elsewhere.
+local function Dropdown(parent, x, y, width, items, get, set)
+    local ok, dropdown = pcall(CreateFrame, "DropdownButton", nil, parent, "WowStyle1DropdownTemplate")
+    if ok and dropdown and type(dropdown.SetupMenu) == "function" then
+        dropdown:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+        dropdown:SetWidth(width)
+        dropdown:SetupMenu(function(_, root)
+            for _, item in ipairs(items()) do
+                root:CreateRadio(item.text, function() return get() == item.value end, function() set(item.value) end)
+            end
+        end)
+        return { frame = dropdown, Refresh = function() if dropdown.GenerateMenu then dropdown:GenerateMenu() end end }
+    end
+    local button = Button(parent, "", x, y, width, nil)
+    local function Text()
+        for _, item in ipairs(items()) do if item.value == get() then button:SetText(item.text) return end end
+        button:SetText("")
+    end
+    button:SetScript("OnClick", function()
+        local list, at = items(), 0
+        for i, item in ipairs(list) do if item.value == get() then at = i end end
+        if #list > 0 then set(list[at % #list + 1].value) end
+        Text()
+    end)
+    Text()
+    return { frame = button, Refresh = Text }
+end
+
+-- "Choice 1:" (the "Choice %d: %s" text without a value).
+local function ChoiceLabel(parent, slot, y)
+    local label = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("TOPLEFT", parent, "TOPLEFT", 20, y - 5)
+    label:SetText((string.format(L["Choice %d: %s"], slot, ""):gsub("%s+$", "")))
+end
+
+-- Blessings for a choice dropdown: every blessing, and "none".
+local function BlessingItems()
+    local items = {}
+    for _, key in ipairs(ns.Engine.KEYS) do items[#items + 1] = { value = key, text = ns.PlanWindow.Short(key) } end
+    items[#items + 1] = { value = false, text = L["none"] }
+    return items
+end
+
+-- Puts key in slot; if it's already in another slot, the two swap.
+local function Place(list, slot, key, size)
+    local old = list[slot]
+    for i = 1, size do if i ~= slot and key and list[i] == key then list[i] = old or false end end
+    list[slot] = key
+end
+
 -- The settings name of each blessing list (looked up when shown, so the chosen language applies).
 local function ListName(id)
     local names = {
@@ -86,60 +138,48 @@ local function ListName(id)
     return names[id] or id
 end
 
--- Blessing lists: pick a list (right-click goes back), then each choice cycles through the blessings
--- not already in the list, and "none". Edits are shared with the group; the leader's lists win.
+-- Blessing lists: pick a list, then a dropdown for each choice. Picking a blessing that's already in
+-- the list swaps the two. Edits are shared with the group; the leader's lists win.
 local function ListEditor(container, y)
     local db, KEYS, IDS = ns.db, ns.Engine.KEYS, ns.Engine.LIST_IDS
-    local selected = 1
-    local picker = Button(container, "", 16, y, 330, nil)
-    picker:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    y = y - 26
-    local slots = {}
-    local function Current()
-        local id = IDS[selected]
-        local src, list = db.lists[id] or ns.Engine.DEFAULT_LISTS[id], {}
-        for i = 1, #KEYS do list[i] = src[i] or false end
-        return id, list
-    end
+    local selected = IDS[1]
+    local choices = {}
     local status = container:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    local function Current()
+        local src, list = db.lists[selected] or ns.Engine.DEFAULT_LISTS[selected], {}
+        for i = 1, #KEYS do list[i] = src[i] or false end
+        return list
+    end
     local function Draw()
-        picker:SetText(string.format(L["List: %s"], ListName(IDS[selected])))
-        local _, list = Current()
-        for slot, button in ipairs(slots) do
-            local key = list[slot]
-            button:SetText(string.format(L["Choice %d: %s"], slot, key and ns.PlanWindow.Short(key) or L["none"]))
-        end
+        for _, choice in ipairs(choices) do choice.Refresh() end
         local state = ns.Buttons.State()
         local source = state and state.listSource
         status:SetText(source and source ~= ns.Group.Me() and string.format(L["The group is using %s's lists."], source) or "")
     end
-    local function Save(id, list)
-        local clean = ns.Engine.CleanList(list)
-        if table.concat(clean, ",") == table.concat(ns.Engine.DEFAULT_LISTS[id], ",") then db.lists[id] = nil
-        else db.lists[id] = list end
-        ns.Group.Hello()
-        Apply()
-    end
-    picker:SetScript("OnClick", function(_, mouse)
-        selected = (mouse == "RightButton") and ((selected - 2) % #IDS + 1) or (selected % #IDS + 1)
-        Draw()
-    end)
+    local listLabel = container:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    listLabel:SetPoint("TOPLEFT", container, "TOPLEFT", 20, y - 5)
+    listLabel:SetText((string.format(L["List: %s"], ""):gsub("%s+$", "")))
+    local picker = Dropdown(container, 110, y, 236, function()
+        local items = {}
+        for _, id in ipairs(IDS) do items[#items + 1] = { value = id, text = ListName(id) } end
+        return items
+    end, function() return selected end, function(id) selected = id; Draw() end)
+    y = y - 30
     for slot = 1, #KEYS do
-        local button = Button(container, "", 16, y, 230, nil)
-        button:SetScript("OnClick", function()
-            local id, list = Current()
-            local used, options = {}, {}
-            for i = 1, #KEYS do if i ~= slot and list[i] then used[list[i]] = true end end
-            for _, key in ipairs(KEYS) do if not used[key] then options[#options + 1] = key end end
-            options[#options + 1] = false
-            local at = #options
-            for i = 1, #options do if options[i] == list[slot] then at = i end end
-            list[slot] = options[at % #options + 1]
-            Save(id, list)
+        ChoiceLabel(container, slot, y)
+        choices[slot] = Dropdown(container, 110, y, 150, BlessingItems, function() return Current()[slot] end, function(key)
+            local list = Current()
+            Place(list, slot, key, #KEYS)
+            if table.concat(ns.Engine.CleanList(list), ",") == table.concat(ns.Engine.DEFAULT_LISTS[selected], ",") then
+                db.lists[selected] = nil
+            else
+                db.lists[selected] = list
+            end
+            ns.Group.Hello()
+            Apply()
             Draw()
         end)
-        slots[slot] = button
-        y = y - 24
+        y = y - 28
     end
     Button(container, L["Reset to recommended"], 16, y - 2, 180, function()
         for id in pairs(db.lists) do db.lists[id] = nil end
@@ -158,6 +198,7 @@ local function ListEditor(container, y)
     note:SetJustifyH("LEFT")
     note:SetText(L["Best first. In a group, the leader's lists are used, or the first paladin's by name. Tanks never get Salvation."])
     Draw()
+    picker.Refresh()
     return y - 36
 end
 
@@ -176,25 +217,23 @@ function Options.Build(container)
     y = y - 34
 
     y = Header(container, L["Your leanings"], y)
-    local KEYS = ns.Engine.KEYS
-    local function LeanList() return db.lean or ns.Engine.DefaultLean(ns.Group.MyTree()) end
+    local function LeanList()
+        local src, list = db.lean or ns.Engine.DefaultLean(ns.Group.MyTree()), {}
+        for i = 1, 3 do list[i] = src[i] or false end
+        return list
+    end
+    local leanings = {}
     for slot = 1, 3 do
-        local picker = Button(container, "", 16, y, 230, nil)
-        local function Text() picker:SetText(string.format(L["Choice %d: %s"], slot, ns.PlanWindow.Short(LeanList()[slot]) ~= ""
-            and ns.PlanWindow.Short(LeanList()[slot]) or L["none"])) end
-        picker:SetScript("OnClick", function()
-            local list = {}
-            for i, k in ipairs(LeanList()) do list[i] = k end
-            local current, nextKey = list[slot], nil
-            for i, k in ipairs(KEYS) do if k == current then nextKey = KEYS[i % #KEYS + 1] end end
-            list[slot] = nextKey or KEYS[1]
-            db.lean = list
-            Text()
+        ChoiceLabel(container, slot, y)
+        leanings[slot] = Dropdown(container, 110, y, 150, BlessingItems, function() return LeanList()[slot] end, function(key)
+            local list = LeanList()
+            Place(list, slot, key, 3)
+            db.lean = ns.Engine.CleanList(list)
+            for _, d in ipairs(leanings) do d.Refresh() end
             ns.Group.Hello()
             Apply()
         end)
-        Text()
-        y = y - 26
+        y = y - 28
     end
     y = y - 6
 
@@ -209,24 +248,12 @@ function Options.Build(container)
     y = y - 4
 
     y = Header(container, L["Language"], y)
-    local function LanguageName()
-        if db.language == "auto" then return L["Automatic (game language)"] end
-        for _, entry in ipairs(ns.LANGUAGES) do
-            if entry.code == db.language then return entry.name end
-        end
-        return db.language
-    end
-    local picker = Button(container, LanguageName(), 16, y, 230, nil)
-    picker:SetScript("OnClick", function(self)
-        local nextCode = ns.LANGUAGES[1].code
-        if db.language ~= "auto" then
-            nextCode = "auto"
-            for i, entry in ipairs(ns.LANGUAGES) do
-                if entry.code == db.language and ns.LANGUAGES[i + 1] then nextCode = ns.LANGUAGES[i + 1].code end
-            end
-        end
-        db.language = nextCode
-        self:SetText(LanguageName())
+    Dropdown(container, 16, y, 230, function()
+        local items = { { value = "auto", text = L["Automatic (game language)"] } }
+        for _, entry in ipairs(ns.LANGUAGES) do items[#items + 1] = { value = entry.code, text = entry.name } end
+        return items
+    end, function() return db.language end, function(code)
+        db.language = code
         ns.Print(L["The language changes after you type /reload."])
     end)
     y = y - 32

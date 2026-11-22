@@ -38,6 +38,7 @@ local function NewFrame(kind, name, _, template)
     function f:GetChecked() return self.checked end
     function f:CreateFontString() return NewFrame("FontString") end
     function f:CreateTexture() return NewFrame("Texture") end
+    function f:SetupMenu(fn) self.menu = fn end
     frames[#frames + 1] = f
     if name then _G[name] = f end
     return f
@@ -343,20 +344,35 @@ C_UnitAuras.GetAuraDataByIndex = realRead
 -- --- Settings and /nbless check ---------------------------------------------------------------------
 SlashCmdList.NULLGATESBLESSINGS("config")
 OK(NullgatesBlessingsOptions and NullgatesBlessingsOptions.shown, "/nbless config opens the settings")
-local listAt
-for i, f in ipairs(frames) do if f.text and tostring(f.text):find("^List: ") then listAt = i end end
-OK(listAt and frames[listAt].text == "List: Warrior: Arms and Fury", "the list editor starts on Warrior: Arms and Fury")
-local firstChoice
-for i = listAt, #frames do if frames[i].text and tostring(frames[i].text):find("^Choice 1: ") then firstChoice = frames[i]; break end end
+-- Dropdowns: open one (run its menu) and read or pick its options.
+local function Options(dropdown)
+    local radios = {}
+    dropdown.menu(dropdown, { CreateRadio = function(_, text, isSelected, select)
+        radios[#radios + 1] = { text = text, selected = isSelected(), select = select }
+    end })
+    return radios
+end
+local function Selected(dropdown) for _, r in ipairs(Options(dropdown)) do if r.selected then return r.text end end end
+local function Pick(dropdown, text) for _, r in ipairs(Options(dropdown)) do if r.text == text then r.select() return true end end end
+local dropdowns = {}
+for _, f in ipairs(frames) do if f.kind == "DropdownButton" and f.menu then dropdowns[#dropdowns + 1] = f end end
+local listPicker, listAt
+for i, d in ipairs(dropdowns) do if Selected(d) == "Warrior: Arms and Fury" then listPicker, listAt = d, i end end
+OK(listPicker, "the list editor is a dropdown, starting on Warrior: Arms and Fury")
+local firstChoice, secondChoice = dropdowns[listAt + 1], dropdowns[listAt + 2]
+OK(Selected(firstChoice) == ns.PlanWindow.Short("might") and #Options(firstChoice) == 6, "choice 1 offers every blessing and none, with Might picked")
 sent = {}
-firstChoice.scripts.OnClick(firstChoice)
+OK(Pick(firstChoice, ns.PlanWindow.Short("kings")), "pick Kings for choice 1")
 Flush()
-OK(db.lists.warriorDps and db.lists.warriorDps[1] == "wisdom", "clicking a choice changes it (Might to Wisdom, skipping ones already in the list)")
+OK(db.lists.warriorDps and db.lists.warriorDps[1] == "kings" and db.lists.warriorDps[2] == "might", "Kings was second: the two swap")
+OK(Selected(secondChoice) == ns.PlanWindow.Short("might"), "and choice 2 now shows Might")
 local shared
 for _, m in ipairs(sent) do local l = ns.Engine.DecodeLists(m.msg); if type(l) == "table" and l.warriorDps then shared = l.warriorDps end end
-OK(shared and shared[1] == "wisdom", "the edited list is shared with the group")
-frames[listAt].scripts.OnClick(frames[listAt], "RightButton")
-OK(frames[listAt].text:find("spec not known", 1, true), "right-click goes back (to the last list)")
+OK(shared and shared[1] == "kings", "the edited list is shared with the group")
+Pick(listPicker, "Priest")
+OK(Selected(firstChoice) == ns.PlanWindow.Short("wisdom"), "picking the priest list shows its choices")
+Pick(firstChoice, ns.PlanWindow.Short("wisdom"))
+OK(db.lists.priest == nil, "picking what's already recommended leaves no edit")
 SlashCmdList.NULLGATESBLESSINGS("check")
 local log = table.concat(db.check or {}, "\n")
 OK(log:find("C_ChatInfo.SendAddonMessage=yes", 1, true), "check reports which calls exist")
