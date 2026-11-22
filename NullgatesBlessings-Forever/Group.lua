@@ -47,8 +47,10 @@ function Group.Members()
         local _, class = UnitClass(unit)
         local reachable = UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit)
         if reachable and not UnitIsUnit(unit, "player") then
+            -- Forever can return the range as secret values, which can't be tested: then it's unknown.
             local inRange, checked = UnitInRange(unit)
-            if checked and not inRange then reachable = false end
+            local secret = issecretvalue and (issecretvalue(inRange) or issecretvalue(checked))
+            if not secret and checked and not inRange then reachable = false end
         end
         local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit) or "NONE"
         list[#list + 1] = { unit = unit, name = UnitName(unit), class = class, level = UnitLevel(unit), group = group,
@@ -104,6 +106,13 @@ local function NameToKey()
     return nameToKey
 end
 
+-- Forever can hide aura fields from addons (secret values, usually in combat); those can't be compared.
+local function Secret(...)
+    if not issecretvalue then return false end
+    for i = 1, select("#", ...) do if issecretvalue((select(i, ...))) then return true end end
+    return false
+end
+
 -- The blessings on a unit: taken = set of keys cast by paladins not in `addonNames`; mine =
 -- [key] = seconds left on blessings you cast.
 function Group.Blessings(unit, addonNames, now)
@@ -119,7 +128,7 @@ function Group.Blessings(unit, addonNames, now)
             if not n then break end
             name, expires, caster = n, e, c
         end
-        local key = name and map[name]
+        local key = name and not Secret(name, expires, caster) and map[name]
         if key then
             local casterName = caster and UnitName(caster)
             if casterName == me then
