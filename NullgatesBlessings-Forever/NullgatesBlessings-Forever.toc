@@ -2,7 +2,7 @@
 ## Title: |cff00c0ffNullgate's Blessings|r - |cffffd100Forever|r
 ## Notes: Smart blessing assignments: checks what every player already has and coordinates paladins automatically.
 ## Author: Nullgate Studios
-## Version: 1.0.0-beta.9
+## Version: 1.0.0-beta.10
 ## IconTexture: Interface\Icons\Spell_Holy_GreaterBlessingofKings
 ## SavedVariablesPerCharacter: NullgatesBlessingsDB
 ## OptionalDeps: NullgatesAddonConfig-Forever

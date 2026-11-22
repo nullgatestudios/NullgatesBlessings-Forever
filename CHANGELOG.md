@@ -2,6 +2,16 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.10] - 2026-11-22
+
+### New
+
+- **Your focus gets your Oath of Light.** Set a group member as your focus and the Oath row, Top Up and the smart macro put your Oath on them instead of the marked tank. Clear your focus and it goes back to the tank.
+
+### Good to know
+
+- Focus only steers the Oath. Blessings still follow the plan every paladin shares, so your focus isn't treated as a tank for blessings.
+
 ## [1.0.0-beta.9] - 2026-11-21
 
 ### New

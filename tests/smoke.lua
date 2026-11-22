@@ -258,6 +258,17 @@ auras.party3[#auras.party3][2] = now + 30
 Fire("UNIT_AURA", "party3")
 Flush()
 OK(topUp.attributes.spell == OATH and oathRow.glow.shown, "under a minute left: the Oath again, in red")
+units.focus = units.party4
+Fire("PLAYER_FOCUS_CHANGED")
+Flush()
+OK(oathRow.label.text == "Arrow" and oathRow.attributes.unit == "party4" and topUp.attributes.spell == OATH and topUp.attributes.unit == "party4",
+    "focus on the hunter: the Oath goes to your focus instead of the tank")
+OK(not ns.Buttons.State().info.Arrow.tank,
+    "focus doesn't make them a tank for blessings")
+units.focus = nil
+Fire("PLAYER_FOCUS_CHANGED")
+Flush()
+OK(oathRow.label.text == "Frosty", "focus cleared: back to the tank")
 table.remove(auras.party3)
 units.party3.role, known[OATH], units.target = "DAMAGER", nil, nil
 Fire("UNIT_AURA", "party3")

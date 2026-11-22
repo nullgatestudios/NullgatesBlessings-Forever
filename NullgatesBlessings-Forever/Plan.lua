@@ -9,14 +9,21 @@ ns.Plan = Plan
 -- Oath of Light is refreshed when it has less than this left (it lasts 5 minutes).
 Plan.OATH_REFRESH = 60
 
--- Your Oath of Light target, when you have the talent: the marked tank who has your Oath (only one at
--- a time), else the first tank in range, else the first tank. Not you.
+-- Your Oath of Light target, when you have the talent: your focus when it's someone in your group,
+-- else the marked tank who has your Oath (only one at a time), else the first tank in range, else the
+-- first tank. Not you. (Focus only steers the Oath: blessings follow the plan every paladin shares.)
 local function OathTarget(members, info, now)
     local oath = ns.OATH_OF_LIGHT
     if not (oath and ns.Group.IsKnown(oath[1])) then return nil end
     local me, pick, pickLeft = ns.Group.Me(), nil, 0
+    local focus
+    if UnitExists("focus") then
+        for _, m in ipairs(members) do
+            if m.name ~= me and UnitIsUnit(m.unit, "focus") then focus = m end
+        end
+    end
     for _, m in ipairs(members) do
-        if info[m.name].tank and m.name ~= me then
+        if (focus and m == focus) or (not focus and info[m.name].tank and m.name ~= me) then
             local left = ns.Group.MyAuraLeft(m.unit, oath[1], now)
             if left == nil then left = math.huge end -- hidden from addons: assume it's fine until it can be read
             if left > 0 then pick, pickLeft = m, left; break end

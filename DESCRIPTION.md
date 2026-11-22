@@ -17,7 +17,7 @@ When two or more paladins run the addon, they all reach the same plan automatica
 - **Greater Blessings in raids**: one row per class.
 - **Lists by spec**: a Feral druid gets Kings and Might, a Balance druid Wisdom and Kings, an Enhancement shaman Might first. The addon learns specs by inspecting nearby group members out of combat and shares them with the other paladins; until a spec is known, the group role is used.
 - **Edit the lists**: change the order for any class or spec in the settings. In a group, the leader's lists are used, so every paladin plans the same way.
-- **Oath of Light** on the marked tank when you have the talent, with its own row. Top Up refreshes it first when it has under a minute left.
+- **Oath of Light** on the marked tank (or your focus) when you have the talent, with its own row. Top Up refreshes it first when it has under a minute left.
 - **Tank detection** from role selection, the raid's Main Tank and Protection talents, with your own marking on top.
 - **Locks**: "Bob always gets Kings from me", or leader locks for the whole group. Everyone else plans around them.
 - **Aura assignments**, an optional announcement to group chat, and a warning when your Symbol of Kings run low.
