@@ -2,6 +2,7 @@
 local _, ns = ...
 
 ns.RegisterLanguagePack("zhCN", "简体中文", {
+    ["Select link"] = "选中链接",
     ["%s is marked as a tank."] = "%s已标记为坦克。",
     ["%s is marked as not a tank."] = "%s已标记为非坦克。",
     ["%s left on yours."] = "你的剩余 %s。",
@@ -60,6 +61,9 @@ ns.RegisterLanguagePack("zhCN", "简体中文", {
     ["Wisdom"] = "智慧",
     ["Your aura"] = "你的光环",
     ["Your leanings"] = "你的偏好",
+    ["Bug report"] = "错误报告",
+    ["Select all"] = "全选",
+    ["Press Ctrl+C to copy this report, then paste it into a new report at the link below, with a few words on what happened."] = "按 Ctrl+C 复制这份报告，然后在下方链接中新建报告并粘贴，再简单说明发生了什么。",
     ["You can't make macros during combat."] = "战斗中无法创建宏。",
     ["Your character macros are full. Delete one and try again."] = "角色专用宏已满。请删除一个后重试。",
     ["The smart blessing macro is on your cursor: put it on an action bar."] = "智能祝福宏已在你的鼠标上：把它放到动作条上。",

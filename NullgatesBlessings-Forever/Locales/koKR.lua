@@ -2,6 +2,7 @@
 local _, ns = ...
 
 ns.RegisterLanguagePack("koKR", "한국어", {
+    ["Select link"] = "링크 선택",
     ["%s is marked as a tank."] = "%s: 방어 전담으로 표시했습니다.",
     ["%s is marked as not a tank."] = "%s: 방어 전담 아님으로 표시했습니다.",
     ["%s left on yours."] = "내 축복: %s 남음.",
@@ -60,6 +61,9 @@ ns.RegisterLanguagePack("koKR", "한국어", {
     ["Wisdom"] = "지혜",
     ["Your aura"] = "내 오라",
     ["Your leanings"] = "내 선호",
+    ["Bug report"] = "버그 보고",
+    ["Select all"] = "모두 선택",
+    ["Press Ctrl+C to copy this report, then paste it into a new report at the link below, with a few words on what happened."] = "Ctrl+C를 눌러 이 보고서를 복사한 다음, 아래 링크의 새 보고서에 붙여 넣고 무슨 일이 있었는지 간단히 적어 주세요.",
     ["You can't make macros during combat."] = "전투 중에는 매크로를 만들 수 없습니다.",
     ["Your character macros are full. Delete one and try again."] = "캐릭터 매크로가 가득 찼습니다. 하나를 삭제하고 다시 시도하세요.",
     ["The smart blessing macro is on your cursor: put it on an action bar."] = "스마트 축복 매크로가 커서에 있습니다. 행동 단축바에 놓으세요.",

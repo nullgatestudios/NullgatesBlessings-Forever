@@ -2,6 +2,7 @@
 local _, ns = ...
 
 ns.RegisterLanguagePack("ptBR", "Português (Brasil)", {
+    ["Select link"] = "Selecionar link",
     ["%s is marked as a tank."] = "%s está marcado como tanque.",
     ["%s is marked as not a tank."] = "%s está marcado como não tanque.",
     ["%s left on yours."] = "Faltam %s na sua.",
@@ -60,6 +61,9 @@ ns.RegisterLanguagePack("ptBR", "Português (Brasil)", {
     ["Wisdom"] = "Sabedoria",
     ["Your aura"] = "Sua aura",
     ["Your leanings"] = "Suas preferências",
+    ["Bug report"] = "Relatório de erro",
+    ["Select all"] = "Selecionar tudo",
+    ["Press Ctrl+C to copy this report, then paste it into a new report at the link below, with a few words on what happened."] = "Pressione Ctrl+C para copiar este relatório e cole-o em um novo relatório no link abaixo, com algumas palavras sobre o que aconteceu.",
     ["You can't make macros during combat."] = "Não é possível criar macros em combate.",
     ["Your character macros are full. Delete one and try again."] = "Suas macros de personagem estão cheias. Apague uma e tente de novo.",
     ["The smart blessing macro is on your cursor: put it on an action bar."] = "A macro inteligente de bênçãos está no seu cursor: coloque-a em uma barra de ações.",

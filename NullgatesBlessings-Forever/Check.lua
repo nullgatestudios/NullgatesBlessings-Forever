@@ -13,6 +13,8 @@ local Check = {}
 ns.Check = Check
 
 local LOG_LIMIT = 400
+local L = ns.L
+
 
 local function Log(text)
     local db = ns.db
@@ -22,8 +24,21 @@ local function Log(text)
         db.check[#db.check + 1] = text
     end
     print("|cff00c0ffNullgate's Blessings check:|r " .. text)
+    if NullgateReport then NullgateReport.Update("blessings") end
 end
 Check.Log = Log
+
+-- Opens the report window every Nullgate addon shares (NullgateReport.lua) with this check's log,
+-- ready to copy and paste into the report form on our website.
+function Check.ShowReport()
+    local L = ns.L
+    return NullgateReport.Show({
+        slug = "blessings", name = "Nullgate's Blessings", addon = "NullgatesBlessings-Forever", command = "/nbless check",
+        lines = function() return ns.db and ns.db.check end,
+        title = L["Bug report"], selectAll = L["Select all"], selectLink = L["Select link"],
+        help = L["Press Ctrl+C to copy this report, then paste it into a new report at the link below, with a few words on what happened."],
+    })
+end
 
 local function Exists(path)
     local value = _G
@@ -96,6 +111,8 @@ function Check.Run()
     local oath = ns.OATH_OF_LIGHT
     local o = ns.Buttons.State() and ns.Buttons.State().oath
     Log(string.format("Oath of Light: talent %s, target %s", tostring(oath and ns.Group.IsKnown(oath[1])), tostring(o and o.label or "none")))
-    if not ns.Plan.Blessing("salvation") then return end
-    Log("Salvation test: put Salvation and another blessing of yours on one player, then run /nbless check again; if both show above, Salvation is separate from the blessing slot")
+    if ns.Plan.Blessing("salvation") then
+        Log("Salvation test: put Salvation and another blessing of yours on one player, then run /nbless check again; if both show above, Salvation is separate from the blessing slot")
+    end
+    Check.ShowReport()
 end

@@ -2,6 +2,7 @@
 local _, ns = ...
 
 ns.RegisterLanguagePack("zhTW", "繁體中文", {
+    ["Select link"] = "選取連結",
     ["%s is marked as a tank."] = "%s已標記為坦克。",
     ["%s is marked as not a tank."] = "%s已標記為非坦克。",
     ["%s left on yours."] = "你的剩餘 %s。",
@@ -60,6 +61,9 @@ ns.RegisterLanguagePack("zhTW", "繁體中文", {
     ["Wisdom"] = "智慧",
     ["Your aura"] = "你的光環",
     ["Your leanings"] = "你的偏好",
+    ["Bug report"] = "錯誤回報",
+    ["Select all"] = "全選",
+    ["Press Ctrl+C to copy this report, then paste it into a new report at the link below, with a few words on what happened."] = "按 Ctrl+C 複製這份報告，然後在下方連結中新增回報並貼上，再簡單說明發生了什麼。",
     ["You can't make macros during combat."] = "戰鬥中無法建立巨集。",
     ["Your character macros are full. Delete one and try again."] = "角色專用巨集已滿。請刪除一個後再試。",
     ["The smart blessing macro is on your cursor: put it on an action bar."] = "智慧祝福巨集已在你的游標上：把它放到快捷列上。",

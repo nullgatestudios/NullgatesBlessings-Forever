@@ -2,6 +2,7 @@
 local _, ns = ...
 
 ns.RegisterLanguagePack("ruRU", "Русский", {
+    ["Select link"] = "Выделить ссылку",
     ["%s is marked as a tank."] = "%s отмечен как танк.",
     ["%s is marked as not a tank."] = "%s отмечен как не танк.",
     ["%s left on yours."] = "На вашем: осталось %s.",
@@ -60,6 +61,9 @@ ns.RegisterLanguagePack("ruRU", "Русский", {
     ["Wisdom"] = "Мудрости",
     ["Your aura"] = "Ваша аура",
     ["Your leanings"] = "Ваши предпочтения",
+    ["Bug report"] = "Отчёт об ошибке",
+    ["Select all"] = "Выделить всё",
+    ["Press Ctrl+C to copy this report, then paste it into a new report at the link below, with a few words on what happened."] = "Нажмите Ctrl+C, чтобы скопировать этот отчёт, затем вставьте его в новый отчёт по ссылке ниже и коротко опишите, что произошло.",
     ["You can't make macros during combat."] = "Нельзя создавать макросы в бою.",
     ["Your character macros are full. Delete one and try again."] = "Макросы персонажа заполнены. Удалите один и попробуйте снова.",
     ["The smart blessing macro is on your cursor: put it on an action bar."] = "Умный макрос благословений у вас на курсоре: поместите его на панель команд.",
