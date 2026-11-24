@@ -2,6 +2,12 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.11] - 2026-11-24
+
+### Fixed
+
+- Ready for Forever's realm changes: if the game ever sends a player's name with an empty realm part ("Name-"), paladins running the addon keep recognising each other.
+
 ## [1.0.0-beta.10] - 2026-11-22
 
 ### New

@@ -455,5 +455,14 @@ local log = table.concat(db.check or {}, "\n")
 OK(log:find("C_ChatInfo.SendAddonMessage=yes", 1, true), "check reports which calls exist")
 OK(log:find("paladins heard from: Brightmend", 1, true), "check lists the paladins heard from")
 
+-- --- Names with a blanked realm ----------------------------------------------------------------
+do
+    local real = Ambiguate
+    Ambiguate = function(name) return name end -- as if the game left "Name-" alone
+    OK(ns.Group.BareName("Brightmend-") == "Brightmend" and ns.Group.BareName("Brightmend-Realm") == "Brightmend" and ns.Group.BareName("Brightmend") == "Brightmend",
+        "names lose a blank or full realm part")
+    Ambiguate = real
+end
+
 io.write(string.format("smoke: %d checks, %d failure(s)\n", checks, failures))
 if failures > 0 then os.exit(1) end

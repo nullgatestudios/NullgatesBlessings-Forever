@@ -354,10 +354,19 @@ function Group.SendLeaderLocks(locks)
     Group.Send(ns.Engine.EncodeLeaderLocks(locks))
 end
 
+-- A player's name without any "-Realm" part. Ambiguate does most of it; the rest guards against a
+-- blanked realm ("Name-"), since character names can't contain a hyphen.
+local function BareName(name)
+    local n = Ambiguate and Ambiguate(name, "none") or name
+    if type(n) ~= "string" or (issecretvalue and issecretvalue(n)) then return n end
+    return n:match("^[^-]+") or n
+end
+Group.BareName = BareName
+
 -- Returns true when the message changed anything.
 function Group.OnMessage(prefix, message, _, sender)
     if prefix ~= Group.PREFIX or not sender then return false end
-    local name = Ambiguate and Ambiguate(sender, "none") or sender
+    local name = BareName(sender)
     if name == Group.Me() then return false end
     local hello = ns.Engine.DecodeHello(message)
     if hello then
