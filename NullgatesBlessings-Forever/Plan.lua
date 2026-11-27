@@ -88,13 +88,18 @@ function Plan.Build()
                 local pal, key = id:match("^(.*):(%a+)$")
                 if given[id] * 2 >= n and (not current[pal] or given[id] > given[pal .. ":" .. current[pal]]) then current[pal] = key end
             end
-            players[#players + 1] = { name = class, class = class, role = "NONE", taken = taken, current = current }
+            local lowest
+            for _, m in ipairs(byClass[class]) do
+                if type(m.level) == "number" and m.level > 0 and (not lowest or m.level < lowest) then lowest = m.level end
+            end
+            players[#players + 1] = { name = class, class = class, role = "NONE", taken = taken, current = current,
+                                      level = lowest, greater = true }
             columns[#columns + 1] = { name = class, class = class, members = byClass[class] }
         end
     else
         for _, m in ipairs(members) do
             players[#players + 1] = { name = m.name, class = m.class, role = m.role, spec = m.spec, tank = info[m.name].tank, taken = info[m.name].taken,
-                                      current = info[m.name].current }
+                                      current = info[m.name].current, level = m.level }
             columns[#columns + 1] = { name = m.name, class = m.class, members = { m } }
         end
     end

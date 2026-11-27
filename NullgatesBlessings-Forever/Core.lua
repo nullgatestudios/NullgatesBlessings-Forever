@@ -153,6 +153,10 @@ events:SetScript("OnEvent", function(_, event, ...)
         ns.Refresh() -- your focus gets your Oath of Light
     elseif event == "PLAYER_TARGET_CHANGED" then
         ns.Macro.Update()
+    elseif event == "UNIT_LEVEL" then
+        -- a level-up can make a better blessing reachable (Kings from level 10)
+        if arg1 == "target" then ns.Macro.Update() end
+        if arg1 == "player" or (arg1 and (arg1:match("^party%d") or arg1:match("^raid%d"))) then ns.Refresh() end
     elseif event == "INSPECT_READY" then
         ns.Inspect.OnReady(arg1)
     elseif event == "UPDATE_SHAPESHIFT_FORM" or event == "UPDATE_SHAPESHIFT_FORMS" then
@@ -163,7 +167,7 @@ events:SetScript("OnEvent", function(_, event, ...)
     end
 end)
 for _, event in ipairs({ "ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_ENABLED", "CHAT_MSG_ADDON", "GROUP_ROSTER_UPDATE",
-    "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS", "INSPECT_READY", "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED" }) do
+    "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS", "INSPECT_READY", "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "UNIT_LEVEL" }) do
     events:RegisterEvent(event)
 end
 

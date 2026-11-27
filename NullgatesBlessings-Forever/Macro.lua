@@ -49,7 +49,7 @@ function Macro.SpellFor(unit, state)
     local tank = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit) == "TANK"
     local known = ns.Group.MyInfo().known
     for _, key in ipairs(ns.Engine.Wishes(class, "NONE", tank, ns.Group.Spec(name), lists)) do
-        if known[key] and (mine[key] or not taken[key]) then
+        if known[key] and (mine[key] or not taken[key]) and ns.Engine.CanReceive(key, level) then
             return ns.Plan.Spell({ key = key, level = level })
         end
     end

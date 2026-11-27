@@ -73,6 +73,36 @@ function Engine.CleanList(list)
     return out
 end
 
+-- The lowest level a player can be to receive any rank of a blessing: a rank reaches targets up to
+-- 10 levels below the level it's learned at (Kings, learned at 20, needs level 10). nil = no limit
+-- (a blessing this client doesn't have).
+function Engine.MinLevel(key, greater)
+    for _, b in ipairs(ns.BLESSINGS or {}) do
+        if b.key == key then
+            local lowest
+            for _, rank in ipairs((greater and b.greater or b.single) or {}) do
+                if not lowest or rank[2] < lowest then lowest = rank[2] end
+            end
+            return lowest and math.max(1, lowest - 10) or nil
+        end
+    end
+end
+
+-- Whether a player of `level` can receive the blessing. An unknown level (nil, 0 or -1) is allowed.
+function Engine.CanReceive(key, level, greater)
+    local min = Engine.MinLevel(key, greater)
+    return not (min and type(level) == "number" and level > 0 and level < min)
+end
+
+-- Drops the blessings a player of `level` is too low to receive.
+function Engine.ForLevel(list, level, greater)
+    local out = {}
+    for _, key in ipairs(list or {}) do
+        if Engine.CanReceive(key, level, greater) then out[#out + 1] = key end
+    end
+    return out
+end
+
 -- A player's wish list: the group's edited list for their spec if there is one, else the
 -- recommended one. Tanks never get Salvation.
 function Engine.Wishes(class, role, tank, spec, lists)
@@ -159,7 +189,8 @@ function Engine.AssignPlayer(paladins, wish, taken, locked, current)
 end
 
 -- The whole plan. paladins: as above (any order); players: { name, class, role, tank, spec, taken = set,
--- current = [paladin] = key }; locks: [paladinName][playerName] = key; lists: the group's edited
+-- current = [paladin] = key, level, greater }; blessings the player is too low for (by level, Greater
+-- ranks when greater) are left out, locks included; locks: [paladinName][playerName] = key; lists: the group's edited
 -- lists ([listId] = list), or nil. Returns plan[paladinName][playerName] = key.
 function Engine.Assign(paladins, players, locks, lists)
     local sorted = {}
@@ -171,9 +202,10 @@ function Engine.Assign(paladins, players, locks, lists)
         local locked = {}
         for _, p in ipairs(sorted) do
             local key = locks and locks[p.name] and locks[p.name][player.name]
-            if key then locked[p.name] = key end
+            if key and Engine.CanReceive(key, player.level, player.greater) then locked[p.name] = key end
         end
-        local wish = Engine.Wishes(player.class, player.role, player.tank, player.spec, lists)
+        local wish = Engine.ForLevel(Engine.Wishes(player.class, player.role, player.tank, player.spec, lists),
+            player.level, player.greater)
         for name, key in pairs(Engine.AssignPlayer(sorted, wish, player.taken, locked, player.current)) do plan[name][player.name] = key end
     end
     return plan

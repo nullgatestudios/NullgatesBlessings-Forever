@@ -230,6 +230,32 @@ Flush()
 OK(macros[1].body:find("[@target,help,nodead] " .. mightName, 1, true), "and catches up when combat ends")
 units.target, auras.target = nil, nil
 
+-- --- Players too low for a blessing: Kings needs level 10 ------------------------------------
+units.target = { name = "Lowbie", class = "WARRIOR", level = 9 }
+Fire("PLAYER_TARGET_CHANGED")
+Flush()
+OK(macros[1].body:find("[@target,help,nodead] Blessing of Might", 1, true) and not macros[1].body:find("[@target,help,nodead] " .. kingsName, 1, true),
+    "a level 9 warrior outside the group: Might, not Kings")
+units.target = nil
+local function ShivGets()
+    local got = {}
+    for _, players in pairs(ns.Plan.Build().plan) do if players.Shiv then got[#got + 1] = players.Shiv end end
+    table.sort(got)
+    return table.concat(got, ",")
+end
+OK(ShivGets() == "kings,might", "a level 60 rogue in the party gets Might and Kings")
+units.party2.level = 9
+Fire("UNIT_LEVEL", "party2")
+Flush()
+OK(ShivGets():find("might") and not ShivGets():find("kings"), "the same rogue at level 9: Might, no Kings")
+units.party2.level = 10
+Fire("UNIT_LEVEL", "party2")
+Flush()
+OK(ShivGets() == "kings,might", "at level 10 Kings comes back")
+units.party2.level = 60
+Fire("UNIT_LEVEL", "party2")
+Flush()
+
 -- --- Oath of Light on the tank (Holy talent) --------------------------------------------------------
 local OATH = ns.OATH_OF_LIGHT[1]
 names[OATH] = "Oath of Light"
