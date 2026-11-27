@@ -9,99 +9,12 @@ ns.Options = Options
 local FULL_TITLE = "Nullgate's Blessings - Forever"
 local window
 
+local K = NullgateBuffKit
 local function Apply()
     if ns.Refresh then ns.Refresh() end
 end
-
-local function Header(parent, text, y)
-    local label = parent:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    label:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, y)
-    label:SetText(text)
-    return y - 28
-end
-
-local function Check(parent, text, get, set, y)
-    local box = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-    box:SetSize(24, 24)
-    box:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, y)
-    box:SetChecked(get())
-    box:SetScript("OnClick", function(self) set(self:GetChecked() and true or false); Apply() end)
-    local label = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("LEFT", box, "RIGHT", 4, 0)
-    label:SetText(text)
-    return y - 28
-end
-
--- A number with - and + buttons. zeroText is shown for 0 (for example "off").
-local function Stepper(parent, text, get, set, min, max, step, format, y, zeroText)
-    local label = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("TOPLEFT", parent, "TOPLEFT", 20, y - 4)
-    label:SetText(text)
-    local value = parent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    value:SetPoint("TOPLEFT", parent, "TOPLEFT", 252, y - 4)
-    value:SetWidth(46)
-    local function Show()
-        local v = get()
-        value:SetText((v == 0 and zeroText) or string.format(format, v))
-    end
-    local function Change(delta)
-        local new = math.floor((get() + delta) / step + 0.5) * step
-        set(math.max(min, math.min(max, new)))
-        Show()
-        Apply()
-    end
-    local minus = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    minus:SetSize(24, 20)
-    minus:SetPoint("TOPLEFT", parent, "TOPLEFT", 224, y)
-    minus:SetText("-")
-    minus:SetScript("OnClick", function() Change(-step) end)
-    local plus = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    plus:SetSize(24, 20)
-    plus:SetPoint("TOPLEFT", parent, "TOPLEFT", 300, y)
-    plus:SetText("+")
-    plus:SetScript("OnClick", function() Change(step) end)
-    Show()
-    return y - 28
-end
-
-local function Button(parent, text, x, y, width, onClick)
-    local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    button:SetSize(width or 150, 22)
-    button:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    button:SetText(text)
-    button:SetScript("OnClick", onClick)
-    return button
-end
-
--- A dropdown (the game's own; a button that cycles through the options on clients without one).
--- items() returns { { value =, text = } }; get() returns the selected value; set(value) changes it.
--- Returns an object with :Refresh() for when the value changes elsewhere.
-local function Dropdown(parent, x, y, width, items, get, set)
-    local ok, dropdown = pcall(CreateFrame, "DropdownButton", nil, parent, "WowStyle1DropdownTemplate")
-    if ok and dropdown and type(dropdown.SetupMenu) == "function" then
-        dropdown:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-        dropdown:SetWidth(width)
-        dropdown:SetupMenu(function(_, root)
-            for _, item in ipairs(items()) do
-                root:CreateRadio(item.text, function() return get() == item.value end, function() set(item.value) end)
-            end
-        end)
-        return { frame = dropdown, Refresh = function() if dropdown.GenerateMenu then dropdown:GenerateMenu() end end }
-    end
-    local button = Button(parent, "", x, y, width, nil)
-    local function Text()
-        for _, item in ipairs(items()) do if item.value == get() then button:SetText(item.text) return end end
-        button:SetText("")
-    end
-    button:SetScript("OnClick", function()
-        local list, at = items(), 0
-        for i, item in ipairs(list) do if item.value == get() then at = i end end
-        if #list > 0 then set(list[at % #list + 1].value) end
-        Text()
-    end)
-    Text()
-    return { frame = button, Refresh = Text }
-end
+local W = K.Widgets(Apply)
+local Header, Check, Stepper, Button, Dropdown = W.Header, W.Check, W.Stepper, W.Button, W.Dropdown
 
 -- "Choice 1:" (the "Choice %d: %s" text without a value).
 local function ChoiceLabel(parent, slot, y)
@@ -277,27 +190,7 @@ function Options.Build(container)
 end
 
 local function OwnWindow()
-    if not window then
-        window = CreateFrame("Frame", "NullgatesBlessingsOptions", UIParent, "BasicFrameTemplateWithInset")
-        window:SetSize(380, 640)
-        window:SetPoint("CENTER")
-        window:SetFrameStrata("DIALOG") -- above unit frames, nameplates and bags
-        window:SetToplevel(true)
-        window:SetMovable(true)
-        window:EnableMouse(true)
-        window:SetClampedToScreen(true)
-        window:RegisterForDrag("LeftButton")
-        window:SetScript("OnDragStart", window.StartMoving)
-        window:SetScript("OnDragStop", window.StopMovingOrSizing)
-        if type(window.SetTitle) == "function" then window:SetTitle(FULL_TITLE)
-        elseif type(window.TitleText) == "table" then window.TitleText:SetText(FULL_TITLE) end
-        local content = CreateFrame("Frame", nil, window)
-        content:SetPoint("TOPLEFT", window, "TOPLEFT", 4, -26)
-        content:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", -4, 4)
-        window:SetHeight(Options.Build(content) + 30)
-        if UISpecialFrames then table.insert(UISpecialFrames, "NullgatesBlessingsOptions") end
-    end
-    window:Show()
+    window = K.ShowWindow("NullgatesBlessingsOptions", FULL_TITLE, 380, Options.Build, window)
 end
 
 function Options.Open(standalone)
@@ -310,21 +203,6 @@ function Options.Open(standalone)
     end
 end
 
--- Nullgate's Addon Config gives each addon a fixed-height page, so the settings go in a scroll frame
--- there (the hub hides the scroll bar when everything fits).
-local function BuildScrolling(container)
-    local scroll = CreateFrame("ScrollFrame", nil, container, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
-    scroll:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -24, 0)
-    local child = CreateFrame("Frame", nil, scroll)
-    child:SetSize(math.max(300, (container:GetWidth() or 0) - 24), 600)
-    scroll:SetScrollChild(child)
-    child:SetHeight(Options.Build(child))
-    local hub = NullgatesAddonConfigForever
-    local ui = hub and hub.UI
-    if ui and ui.SetupAutoScroll then ui:SetupAutoScroll(scroll, child) end
-end
-
 function Options.RegisterHub()
     local hub = NullgatesAddonConfigForever
     if Options.registered or not (hub and hub.RegisterModule and ns.db) then return end
@@ -335,7 +213,7 @@ function Options.RegisterHub()
         isNullgate = true,
         description = L["Smart blessing assignments that check what every player already has and coordinate paladins."],
         db = ns.db,
-        buildUI = function(container) BuildScrolling(container) end,
+        buildUI = function(container) K.BuildScrolling(container, Options.Build) end,
         toggleMovers = function(state) ns.db.locked = not state; ns.Buttons.Update() end,
         resetMovers = function() ns.Buttons.ResetPosition() end,
         isMoversUnlocked = function() return not ns.db.locked end,

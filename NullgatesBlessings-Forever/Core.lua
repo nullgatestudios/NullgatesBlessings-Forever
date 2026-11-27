@@ -40,16 +40,9 @@ function ns.Print(text)
     print("|cff00c0ffBlessings:|r " .. tostring(text))
 end
 
-local pending = {}
-function ns.WhenSafe(key, fn)
-    if InCombatLockdown() then
-        pending[key] = fn
-        return false
-    end
-    pending[key] = nil
-    fn()
-    return true
-end
+-- Secure rows and the macro only change out of combat (the kit's queue).
+local safe = NullgateBuffKit.NewSafeQueue()
+ns.WhenSafe = safe.Run
 
 -- --- Announce -----------------------------------------------------------------------------
 
@@ -138,10 +131,7 @@ events:SetScript("OnEvent", function(_, event, ...)
         -- When the settings were last saved: Nullgate's Buffs keeps whichever copy is newer.
         if ns.db then ns.db.savedAt = time() end
     elseif event == "PLAYER_REGEN_ENABLED" then
-        for key, fn in pairs(pending) do
-            pending[key] = nil
-            fn()
-        end
+        safe.Flush()
         if active then ns.Refresh() end
     elseif event == "CHAT_MSG_ADDON" then
         if ns.Group.OnMessage(...) and active then ns.Refresh() end

@@ -11,17 +11,9 @@ ns.Macro = Macro
 
 Macro.NAME = "NGBless"
 local ICON = "INV_Misc_QuestionMark" -- with #showtooltip the macro shows the blessing's own icon
-local lastBody
 
--- "Blessing of Kings(Rank 3)" for /cast, or just the name when the client has no rank text.
-function Macro.CastName(spellID)
-    local name = spellID and ns.Group.SpellName(spellID)
-    if not name then return nil end
-    local sub = C_Spell and C_Spell.GetSpellSubtext and C_Spell.GetSpellSubtext(spellID)
-        or (GetSpellSubtext and GetSpellSubtext(spellID))
-    if type(sub) == "string" and sub ~= "" and not ns.Group.IsSecret(sub) then return name .. "(" .. sub .. ")" end
-    return name
-end
+local K = NullgateBuffKit
+Macro.CastName = K.CastName
 
 -- The blessing spell to cast on a unit: your planned one when they're in the plan (the Greater
 -- Blessing for their class in a raid), else the best one from their class list that they don't
@@ -76,42 +68,17 @@ function Macro.Body(state)
     return table.concat(lines, "\n")
 end
 
-local function Index()
-    local index = GetMacroIndexByName and GetMacroIndexByName(Macro.NAME)
-    return (index and index > 0) and index or nil
+local smart -- made on first use, once the language is known
+local function Smart()
+    smart = smart or K.NewMacro({ name = Macro.NAME, icon = ICON, body = function() return Macro.Body(ns.Buttons.State()) end,
+        run = ns.WhenSafe, print = ns.Print, texts = { combat = L["You can't make macros during combat."],
+        full = L["Your character macros are full. Delete one and try again."],
+        done = L["The smart blessing macro is on your cursor: put it on an action bar."] } })
+    return smart
 end
 
 -- Rewrites the macro if it exists and its text changed (out of combat only).
-function Macro.Update()
-    if not Index() then return end
-    ns.WhenSafe("macro", function()
-        local index = Index()
-        if not index then return end
-        local body = Macro.Body(ns.Buttons.State())
-        if body ~= lastBody then
-            EditMacro(index, Macro.NAME, ICON, body)
-            lastBody = body
-        end
-    end)
-end
+function Macro.Update() Smart().Update() end
 
 -- /nbless macro and the settings button: makes the macro if needed and puts it on your cursor.
-function Macro.Make()
-    if InCombatLockdown() then
-        ns.Print(L["You can't make macros during combat."])
-        return
-    end
-    local index = Index()
-    if not index then
-        local ok, made = pcall(CreateMacro, Macro.NAME, ICON, Macro.Body(ns.Buttons.State()), true)
-        if not ok or not made or made == 0 then
-            ns.Print(L["Your character macros are full. Delete one and try again."])
-            return
-        end
-        index = made
-    end
-    lastBody = nil
-    Macro.Update()
-    if PickupMacro then PickupMacro(index) end
-    ns.Print(L["The smart blessing macro is on your cursor: put it on an action bar."])
-end
+function Macro.Make() Smart().Make() end

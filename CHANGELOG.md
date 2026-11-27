@@ -2,6 +2,12 @@
 
 All notable changes to Nullgate's Blessings - Forever.
 
+## [1.0.0-beta.14] - 2026-11-27
+
+### Changed
+
+- **Shared building blocks.** The bar, its rows and timers, the smart macro, the group roster and the settings widgets now come from one file every Nullgate buff addon shares (`NullgateBuffKit.lua`), so a fix in one reaches all of them. Nothing changes in how Blessings looks or works.
+
 ## [1.0.0-beta.13] - 2026-11-27
 
 ### Fixed

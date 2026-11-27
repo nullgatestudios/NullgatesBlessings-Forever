@@ -12,16 +12,8 @@ local specs = {}        -- [name] = { tree, at }: talent trees learned by inspec
 local peerLists = {}    -- [name] = edited blessing lists from a paladin or leader running the addon
 Group.peers, Group.specs, Group.peerLists = peers, specs, peerLists
 
-function Group.SpellName(spellID)
-    if not spellID then return nil end
-    if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
-    return GetSpellInfo and (GetSpellInfo(spellID)) or nil
-end
-
-function Group.IsKnown(spellID)
-    local known = (C_SpellBook and C_SpellBook.IsSpellKnown) or IsSpellKnown or IsPlayerSpell
-    return known ~= nil and known(spellID) == true
-end
+local K = NullgateBuffKit
+Group.SpellName, Group.IsKnown, Group.IsSecret, Group.BareName = K.SpellName, K.IsKnown, K.IsSecret, K.BareName
 
 function Group.Me()
     return UnitName("player")
@@ -61,38 +53,7 @@ end
 -- --- Members -------------------------------------------------------------------------
 
 function Group.Members()
-    local list = {}
-    local function Add(unit, group)
-        if not UnitExists(unit) then return end
-        local _, class = UnitClass(unit)
-        local reachable = UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit)
-        if reachable and not UnitIsUnit(unit, "player") then
-            -- Forever can return the range as secret values, which can't be tested: then it's unknown.
-            local inRange, checked = UnitInRange(unit)
-            local secret = issecretvalue and (issecretvalue(inRange) or issecretvalue(checked))
-            if not secret and checked and not inRange then reachable = false end
-        end
-        local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit) or "NONE"
-        if Group.IsSecret(role) then role = "NONE" end
-        local name = UnitName(unit)
-        list[#list + 1] = { unit = unit, name = name, class = class, level = UnitLevel(unit), group = group,
-                            role = role, reachable = reachable, spec = Group.Spec(name),
-                            mainTank = GetPartyAssignment and GetPartyAssignment("MAINTANK", unit) or false }
-    end
-    if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local _, _, group = GetRaidRosterInfo(i)
-            Add("raid" .. i, group or 1)
-        end
-    else
-        Add("player", 1)
-        for i = 1, GetNumSubgroupMembers() do Add("party" .. i, 1) end
-    end
-    table.sort(list, function(a, b)
-        if a.group ~= b.group then return a.group < b.group end
-        return (a.name or "") < (b.name or "")
-    end)
-    return list
+    return K.Members(function(m) m.spec = Group.Spec(m.name) end)
 end
 
 -- Tank marks from every paladin running the addon (and you): marked tanks and marked not-tanks.
@@ -130,26 +91,8 @@ local function NameToKey()
     return nameToKey
 end
 
--- Forever won't let addons read some auras (secret values, usually in combat): asking for one is an
--- error, and hidden fields can't be compared. Returns the aura, nil past the last one, or false when
--- the game is hiding it.
-local function IsSecret(v) return issecretvalue ~= nil and issecretvalue(v) == true end
-Group.IsSecret = IsSecret
-local function ReadAura(unit, i)
-    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-        local S = C_Secrets
-        if S and S.ShouldUnitAuraIndexBeSecret and S.ShouldUnitAuraIndexBeSecret(unit, i, "HELPFUL") then return false end
-        local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, unit, i, "HELPFUL")
-        if not ok then return false end
-        if a and (IsSecret(a.name) or IsSecret(a.expirationTime) or IsSecret(a.duration) or IsSecret(a.sourceUnit)
-            or IsSecret(a.spellId)) then return false end
-        return a
-    end
-    local name, _, _, _, duration, expires, caster, _, _, spellId = UnitBuff(unit, i)
-    if not name then return nil end
-    return { name = name, duration = duration, expirationTime = expires, sourceUnit = caster, spellId = spellId }
-end
-
+local IsSecret = K.IsSecret
+local ReadAura = K.ReadAura
 Group.ReadAura = ReadAura
 
 -- The last full read of each unit, used while the game hides its auras.
@@ -302,16 +245,8 @@ end
 
 -- --- Messages ----------------------------------------------------------------------------
 
-local function Channel()
-    if IsInRaid() then return "RAID" end
-    if GetNumSubgroupMembers() > 0 then return "PARTY" end
-end
-
 function Group.Send(message)
-    local channel = Channel()
-    if channel and C_ChatInfo and C_ChatInfo.SendAddonMessage then
-        C_ChatInfo.SendAddonMessage(Group.PREFIX, message, channel)
-    end
+    K.Send(Group.PREFIX, message)
 end
 
 -- Specs to share: yours and every one learned in the group.
@@ -354,14 +289,7 @@ function Group.SendLeaderLocks(locks)
     Group.Send(ns.Engine.EncodeLeaderLocks(locks))
 end
 
--- A player's name without any "-Realm" part. Ambiguate does most of it; the rest guards against a
--- blanked realm ("Name-"), since character names can't contain a hyphen.
-local function BareName(name)
-    local n = Ambiguate and Ambiguate(name, "none") or name
-    if type(n) ~= "string" or (issecretvalue and issecretvalue(n)) then return n end
-    return n:match("^[^-]+") or n
-end
-Group.BareName = BareName
+local BareName = K.BareName
 
 -- Returns true when the message changed anything.
 function Group.OnMessage(prefix, message, _, sender)

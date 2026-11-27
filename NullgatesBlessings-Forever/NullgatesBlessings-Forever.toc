@@ -2,7 +2,7 @@
 ## Title: |cff00c0ffNullgate's Blessings|r - |cffffd100Forever|r
 ## Notes: Smart blessing assignments: checks what every player already has and coordinates paladins automatically.
 ## Author: Nullgate Studios
-## Version: 1.0.0-beta.13
+## Version: 1.0.0-beta.14
 ## IconTexture: Interface\Icons\Spell_Holy_GreaterBlessingofKings
 ## SavedVariablesPerCharacter: NullgatesBlessingsDB
 ## OptionalDeps: NullgatesAddonConfig-Forever
@@ -20,6 +20,7 @@ Locales\ruRU.lua
 Locales\koKR.lua
 Locales\zhCN.lua
 Locales\zhTW.lua
+NullgateBuffKit.lua
 Data\Blessings.lua
 Engine.lua
 Group.lua

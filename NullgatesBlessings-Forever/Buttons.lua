@@ -9,24 +9,15 @@ local L = ns.L
 local Buttons = {}
 ns.Buttons = Buttons
 
-local WIDTH, ROW, ICON_SIZE, GAP, SLOTS = 180, 22, 18, 3, 10
+local WIDTH, ROW, GAP, SLOTS = 180, 22, 3, 10
 local ICON = "Interface\\Icons\\Spell_Holy_FistOfJustice"
 local bar
 local slots, topUp, aura, oath = {}, nil, nil, nil
 Buttons.slots = slots
 local state -- the last plan
 
-local function SpellIcon(spellID)
-    if not spellID then return nil end
-    if C_Spell and C_Spell.GetSpellTexture then return C_Spell.GetSpellTexture(spellID) end
-    return GetSpellTexture and GetSpellTexture(spellID) or nil
-end
-
-local function Short(seconds)
-    if seconds == math.huge then return "" end
-    if seconds >= 60 then return math.floor(seconds / 60) .. "m" end
-    return math.floor(seconds) .. "s"
-end
+local K = NullgateBuffKit
+local Short = K.ShortTime
 
 -- A party member's name, or a class's name in a raid.
 local function Label(target)
@@ -66,106 +57,23 @@ local function ShowTooltip(button)
     GameTooltip:Show()
 end
 
-local function Dragging(button)
-    button:RegisterForDrag("LeftButton")
-    button:SetScript("OnDragStart", function() bar:GetScript("OnDragStart")(bar) end)
-    button:SetScript("OnDragStop", function() bar:GetScript("OnDragStop")(bar) end)
-end
-
--- A row: icon, name, a bar for the time left and the timer. Top Up uses the same row in gold.
-local function NewRow(name, gold)
-    local row = CreateFrame("Button", name, bar, "SecureActionButtonTemplate")
-    row:SetSize(WIDTH - 2 * GAP, ROW)
-    row:RegisterForClicks("AnyUp", "AnyDown")
-    row.back = row:CreateTexture(nil, "BACKGROUND")
-    row.back:SetAllPoints(row)
-    if gold then row.back:SetColorTexture(0.32, 0.24, 0.04, 0.9) else row.back:SetColorTexture(0, 0, 0, 0.45) end
-    row.fill = row:CreateTexture(nil, "BORDER")
-    row.fill:SetPoint("TOPLEFT", row, "TOPLEFT", ROW, 0)
-    row.fill:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", ROW, 0)
-    row.fill:SetColorTexture(0.25, 0.55, 0.3, 0.55)
-    row.fill:Hide()
-    row.glow = row:CreateTexture(nil, "BORDER")
-    row.glow:SetAllPoints(row)
-    row.glow:SetColorTexture(0.8, 0.1, 0.1, 0.4)
-    row.glow:Hide()
-    row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetSize(ICON_SIZE, ICON_SIZE)
-    row.icon:SetPoint("LEFT", row, "LEFT", 2, 0)
-    row.icon:SetTexture(ICON)
-    row.label = row:CreateFontString(nil, "OVERLAY", gold and "GameFontNormal" or "GameFontHighlightSmall")
-    row.label:SetPoint("LEFT", row.icon, "RIGHT", 5, 0)
-    row.label:SetJustifyH("LEFT")
-    row.timer = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.timer:SetPoint("RIGHT", row, "RIGHT", -5, 0)
-    row.timer:SetJustifyH("RIGHT")
-    row.label:SetPoint("RIGHT", row.timer, "LEFT", -4, 0)
-    local highlight = row:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints(row)
-    highlight:SetColorTexture(1, 1, 1, 0.12)
-    row:SetScript("OnEnter", ShowTooltip)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    Dragging(row)
-    return row
-end
-
-local function NewAuraButton()
-    local button = CreateFrame("Button", "NullgatesBlessingsAura", bar, "SecureActionButtonTemplate")
-    button:SetSize(ROW, ROW)
-    button:RegisterForClicks("AnyUp", "AnyDown")
-    button.icon = button:CreateTexture(nil, "ARTWORK")
-    button.icon:SetAllPoints(button)
-    button.icon:SetTexture(ICON)
-    local highlight = button:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints(button)
-    highlight:SetColorTexture(1, 1, 1, 0.15)
-    button:SetScript("OnEnter", ShowTooltip)
-    button:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    Dragging(button)
-    return button
-end
-
-local function SavePosition()
-    local point, _, relativePoint, x, y = bar:GetPoint()
-    ns.db.point = { point = point, relativePoint = relativePoint, x = x, y = y }
-end
-
-local function RestorePosition()
-    bar:ClearAllPoints()
-    local p = ns.db.point
-    if p and p.point then bar:SetPoint(p.point, UIParent, p.relativePoint or p.point, p.x or 0, p.y or 0)
-    else bar:SetPoint("CENTER", UIParent, "CENTER", 0, -220) end
-end
+local barObject -- the kit bar: rows, squares and the saved position
 
 function Buttons.Create()
     if bar then return end
-    bar = CreateFrame("Frame", "NullgatesBlessingsBar", UIParent)
-    bar:SetMovable(true)
-    bar:SetClampedToScreen(true)
-    bar:EnableMouse(true)
-    bar:RegisterForDrag("LeftButton")
-    bar:SetScript("OnDragStart", function(self) if not ns.db.locked and not InCombatLockdown() then self:StartMoving() end end)
-    bar:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); SavePosition() end)
-    bar.background = bar:CreateTexture(nil, "BACKGROUND")
-    bar.background:SetAllPoints(bar)
-    bar.background:SetColorTexture(0.08, 0.1, 0.13, 0.75)
-    topUp = NewRow("NullgatesBlessingsTopUp", true)
-    aura = NewAuraButton()
-    oath = NewRow("NullgatesBlessingsOath")
-    for i = 1, SLOTS do slots[i] = NewRow("NullgatesBlessingsSlot" .. i) end
+    barObject = K.NewBar({ name = "NullgatesBlessingsBar", db = ns.db, width = WIDTH, row = ROW, icon = ICON,
+                           point = { 0, -220 }, tooltip = ShowTooltip })
+    bar = barObject.frame
+    topUp = barObject.NewRow("NullgatesBlessingsTopUp", true)
+    aura = barObject.NewSquare("NullgatesBlessingsAura")
+    oath = barObject.NewRow("NullgatesBlessingsOath")
+    for i = 1, SLOTS do slots[i] = barObject.NewRow("NullgatesBlessingsSlot" .. i) end
     Buttons.topUp, Buttons.aura, Buttons.oath = topUp, aura, oath
-    RestorePosition()
     Buttons.Update()
 end
 
 local function SetTarget(row, target, spell, duration)
-    row.target, row.spell, row.duration = target, spell, duration
-    local unit = target and target.units[1]
-    row:SetAttribute("type", (spell and unit) and "spell" or nil)
-    row:SetAttribute("spell", (spell and unit) and spell or nil)
-    row:SetAttribute("unit", (spell and unit) and unit or nil)
-    row.icon:SetTexture(SpellIcon(spell) or ICON)
-    row.icon:SetDesaturated(not (spell and unit))
+    K.SetTarget(row, target, spell, duration, ICON)
 end
 
 -- Whether an aura of yours is on: from the stance bar (readable in combat), else your buffs.
@@ -247,7 +155,7 @@ function Buttons.Update()
         aura.spell = rank and rank[1]
         aura:SetAttribute("type", aura.spell and "spell" or nil)
         aura:SetAttribute("spell", aura.spell)
-        aura.icon:SetTexture(SpellIcon(aura.spell) or ICON)
+        aura.icon:SetTexture(K.SpellIcon(aura.spell) or ICON)
 
         -- Layout: Top Up and the aura on the first line (the aura only while it's off), then one row per target.
         local showTopUp, showAura = ns.db.showTopUp, ns.db.showAura and aura.spell ~= nil and not auraOn
@@ -300,21 +208,7 @@ function Buttons.UpdateTimers()
     if not bar or not state then return end
     local warn = (ns.db.warnMinutes or 5) * 60
     local fillWidth = WIDTH - 2 * GAP - ROW
-    local function Timer(row, rowWarn)
-        local t = row.target
-        if t then
-            local left = t.remaining
-            row.timer:SetText(left > 0 and Short(left) or L["Missing."])
-            row.glow:SetShown(left < rowWarn)
-            local fraction = (left == math.huge and 1) or (row.duration and row.duration > 0 and math.min(1, left / row.duration)) or 0
-            row.fill:SetWidth(math.max(1, fillWidth * fraction))
-            row.fill:SetShown(fraction > 0)
-        else
-            row.timer:SetText("")
-            row.glow:Hide()
-            row.fill:Hide()
-        end
-    end
+    local function Timer(row, rowWarn) K.ShowTimer(row, rowWarn, fillWidth, L["Missing."]) end
     for _, row in ipairs(slots) do Timer(row, warn) end
     Timer(oath, ns.Plan.OATH_REFRESH)
     topUp.glow:SetShown(topUp.target ~= nil and topUp.target.remaining < (topUp.target.oath and ns.Plan.OATH_REFRESH or warn))
@@ -330,5 +224,5 @@ end
 function Buttons.ResetPosition()
     if not bar then return end
     ns.db.point = nil
-    ns.WhenSafe("position", RestorePosition)
+    ns.WhenSafe("position", barObject.Restore)
 end
