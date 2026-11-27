@@ -310,6 +310,21 @@ function Options.Open(standalone)
     end
 end
 
+-- Nullgate's Addon Config gives each addon a fixed-height page, so the settings go in a scroll frame
+-- there (the hub hides the scroll bar when everything fits).
+local function BuildScrolling(container)
+    local scroll = CreateFrame("ScrollFrame", nil, container, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
+    scroll:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -24, 0)
+    local child = CreateFrame("Frame", nil, scroll)
+    child:SetSize(math.max(300, (container:GetWidth() or 0) - 24), 600)
+    scroll:SetScrollChild(child)
+    child:SetHeight(Options.Build(child))
+    local hub = NullgatesAddonConfigForever
+    local ui = hub and hub.UI
+    if ui and ui.SetupAutoScroll then ui:SetupAutoScroll(scroll, child) end
+end
+
 function Options.RegisterHub()
     local hub = NullgatesAddonConfigForever
     if Options.registered or not (hub and hub.RegisterModule and ns.db) then return end
@@ -320,7 +335,7 @@ function Options.RegisterHub()
         isNullgate = true,
         description = L["Smart blessing assignments that check what every player already has and coordinate paladins."],
         db = ns.db,
-        buildUI = function(container) Options.Build(container) end,
+        buildUI = function(container) BuildScrolling(container) end,
         toggleMovers = function(state) ns.db.locked = not state; ns.Buttons.Update() end,
         resetMovers = function() ns.Buttons.ResetPosition() end,
         isMoversUnlocked = function() return not ns.db.locked end,

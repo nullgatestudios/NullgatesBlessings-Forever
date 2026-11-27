@@ -134,6 +134,9 @@ events:SetScript("OnEvent", function(_, event, ...)
             C_Timer.NewTicker(3, ns.Inspect.Tick)
         end
         ns.Group.Hello()
+    elseif event == "PLAYER_LOGOUT" then
+        -- When the settings were last saved: Nullgate's Buffs keeps whichever copy is newer.
+        if ns.db then ns.db.savedAt = time() end
     elseif event == "PLAYER_REGEN_ENABLED" then
         for key, fn in pairs(pending) do
             pending[key] = nil
@@ -166,7 +169,7 @@ events:SetScript("OnEvent", function(_, event, ...)
         ns.Refresh()
     end
 end)
-for _, event in ipairs({ "ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_ENABLED", "CHAT_MSG_ADDON", "GROUP_ROSTER_UPDATE",
+for _, event in ipairs({ "ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_LOGOUT", "PLAYER_REGEN_ENABLED", "CHAT_MSG_ADDON", "GROUP_ROSTER_UPDATE",
     "UNIT_AURA", "SPELLS_CHANGED", "CHARACTER_POINTS_CHANGED", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS", "INSPECT_READY", "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "UNIT_LEVEL" }) do
     events:RegisterEvent(event)
 end

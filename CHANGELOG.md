@@ -9,6 +9,7 @@ All notable changes to Nullgate's Blessings - Forever.
 - **No more blessings a player is too low for.** A blessing only reaches players up to 10 levels below the level it's learned at, so Blessing of Kings needs level 10. A lower player now gets the next blessing on their list instead, usually Might or Wisdom, and the smart macro does the same.
 - In a raid, a class gets a Greater Blessing only when its lowest-level member can receive it (Greater Kings from level 50).
 - The plan updates when a group member levels up, so Kings is planned again as soon as they reach level 10.
+- **Settings in Nullgate's Addon Config scroll.** The Blessings page no longer runs past the bottom of the Addon Config window.
 
 ### Good to know
 
